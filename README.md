@@ -14,7 +14,6 @@ You may need the following packages installed:
 
     gcc-arm-linux-gnueabi
     make
-    
 
 ## Development
 
@@ -22,13 +21,13 @@ You may need the following packages installed:
 
 As simple as `make` or `make build`
 
-And run it: `./delcious-gps`
+And run it: `./bin/delcious-gps`
 
-### Raspberry pi output
+### Raspberry pi binar
 
 To get a binary: `make build-rpi`
 
-Copy the binary to your raspberry pi: `scp delcious-gps pi@<ip>:delicious-gps`
+Copy the binary to your raspberry pi: `scp bin/delcious-gps pi@<ip>:delicious-gps`
 
 SSH into it: `ssh pi@<ip address>`
 
