@@ -1,4 +1,4 @@
-module github.com/b-n/delicious-gps/internal/location
+module github.com/b-n/delicious-gps/internal/persistence
 
 go 1.15
 
