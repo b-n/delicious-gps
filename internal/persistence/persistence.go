@@ -16,7 +16,7 @@ type positionData struct {
 	Time           time.Time
 }
 
-func open(database gorm.Dialector) (*gorm.DB, error) {
+func Open(database gorm.Dialector) (*gorm.DB, error) {
 	db, err := gorm.Open(database, &gorm.Config{})
 
 	if err != nil {

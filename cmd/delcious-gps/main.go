@@ -4,13 +4,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/b-n/delicious-gps/internal/location"
+	"github.com/b-n/delicious-gps/internal/persistence"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 var (
-	debugLogger *log.Logger
 	infoLogger  *log.Logger
+	debugLogger *log.Logger
 	errorLogger *log.Logger
 )
 
@@ -26,7 +28,7 @@ func check(e error) {
 func init() {
 	timeFormat := log.Ldate | log.Ltime
 
-	gormdb, err := persistence.init(sqlite.Open("data.db"))
+	gormdb, err := persistence.Open(sqlite.Open("data.db"))
 	check(err)
 
 	db = gormdb
@@ -37,7 +39,20 @@ func init() {
 }
 
 func main() {
-	_, err := location.listen()
+	infoLogger.Printf("delcious-gps Started")
+	locations := make(chan location.PositionData)
+
+	gpsdDone, err := location.Listen(locations)
+	check(err)
+
+	for {
+		select {
+		case v := <-locations:
+			debugLogger.Printf("Location lon: %.4f lat: %.4f alt: %.4f", v.Lon, v.Lat, v.Alt)
+		case <-gpsdDone:
+			os.Exit(0)
+		}
+	}
 
 	debugLogger.Printf("here")
 }
