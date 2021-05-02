@@ -1,4 +1,4 @@
-module delicious-gps
+module github.com/b-n/delicious-gps
 
 go 1.15
 
