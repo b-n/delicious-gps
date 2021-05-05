@@ -52,3 +52,32 @@ position_data:
   time: datetime
 ```
 
+## TODO
+
+- [x] Basic GPSD listener and sqlite writer
+- [x] Configuration (command line can support args)
+- [x] "Proper" logging/verbosity
+- [x] Some level of "ready" state
+- [ ] Upstartd script/installer
+- [ ] Log location values to the database
+- [ ] GPIO interfacing
+  - [ ] Buttons
+  - [ ] neopixel (for feedback)
+
+## Design thought
+
+- Modules
+  - Location
+    - Has a channel `positions` which the GPSD will fire GPSD update events into
+      - Event details, lon/lat/alt + errors + device name + metadata from sats (e.g. all data that makes up that position)
+  - Status (GPIO)
+    - has a channel `statuses` which fires events when the buttons are pressed
+    - Event details: uint_16 notifying the combination of values
+    - Keep strack of the current buttons that are pressed, and highlights the correct keys etc
+  - Persistence
+    - Methods to easily store location data in sqlite db?
+- Main
+  - Plumb channels together (i.e. keep current state emited by status, listen to location module )
+  - Loads config
+- Config
+  -

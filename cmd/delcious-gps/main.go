@@ -1,58 +1,83 @@
 package main
 
 import (
-	"log"
 	"os"
 
+	"github.com/b-n/delicious-gps/internal/config"
 	"github.com/b-n/delicious-gps/internal/location"
+	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/b-n/delicious-gps/internal/persistence"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 var (
-	infoLogger  *log.Logger
-	debugLogger *log.Logger
-	errorLogger *log.Logger
+	db   *gorm.DB
+	opts config.Options
 )
 
-var db *gorm.DB
-
-func check(e error) {
-	if e != nil {
-		errorLogger.Fatal(e)
-		panic(e)
-	}
-}
-
 func init() {
-	timeFormat := log.Ldate | log.Ltime
+	opts = config.Init(os.Args)
+	logging.Init(opts.ShowDebug)
 
-	gormdb, err := persistence.Open(sqlite.Open("data.db"))
-	check(err)
+	gormdb, err := persistence.Open(sqlite.Open(opts.Database))
+	logging.Check(err)
 
 	db = gormdb
+}
 
-	debugLogger = log.New(os.Stdout, "DEBUG: ", timeFormat)
-	infoLogger = log.New(os.Stdout, "INFO: ", timeFormat)
-	errorLogger = log.New(os.Stdout, "ERROR: ", timeFormat)
+func nextState(currentState int, positionData location.PositionData) int {
+	newState := currentState
+
+	haveSkyReport := positionData.SKYReport != nil
+	have3DFix := (*positionData.TPVReport).Mode == 3
+
+	switch {
+	case (currentState < 3 && haveSkyReport && have3DFix):
+		newState = 3
+		logging.Info("Acquired 3D Fix, running...")
+		break
+	case (currentState < 2 && haveSkyReport):
+		newState = 2
+		logging.Info("Waiting on 3D Fix")
+		break
+	case (currentState < 1 && !haveSkyReport):
+		newState = 1
+		logging.Info("Waiting on SKY Report")
+		break
+	}
+	logging.Debugf("newState: %+v", newState)
+	return newState
 }
 
 func main() {
-	infoLogger.Printf("delcious-gps Started")
+	logging.Info("delcious-gps Started")
+
 	locations := make(chan location.PositionData)
+	//currentStatus := make(chan status.State)
 
 	gpsdDone, err := location.Listen(locations)
-	check(err)
+	logging.Check(err)
+
+	state := 0
 
 	for {
 		select {
 		case v := <-locations:
-			debugLogger.Printf("Location lon: %.4f lat: %.4f alt: %.4f", v.Lon, v.Lat, v.Alt)
+			tpv := *v.TPVReport
+			sky := *v.SKYReport
+			logging.Debugf("TPVReport: %+v", tpv)
+			logging.Debugf("SKYReport: %+v", sky)
+			logging.Debugf("CurrentState: %+v", state)
+			state = nextState(state, v)
+
+			if state < 3 {
+				break
+			}
+
+			logging.Debug("Processing location data")
 		case <-gpsdDone:
 			os.Exit(0)
 		}
 	}
-
-	debugLogger.Printf("here")
 }

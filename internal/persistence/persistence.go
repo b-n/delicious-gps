@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-type positionData struct {
+// PositionData is a struct which represents the data in the sqlite table
+type PositionData struct {
 	gorm.Model
 	Lat            float64
 	Lon            float64
@@ -23,6 +24,6 @@ func Open(database gorm.Dialector) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&positionData{})
+	db.AutoMigrate(&PositionData{})
 	return db, nil
 }

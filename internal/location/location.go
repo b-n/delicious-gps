@@ -1,45 +1,38 @@
 package location
 
 import (
-	"time"
-
 	"github.com/stratoberry/go-gpsd"
 )
 
 // PositionData contains the location data from gpsd
 type PositionData struct {
-	Lat            float64
-	Lon            float64
-	Alt            float64
-	Velocity       float64
-	SatelliteCount int
-	Time           time.Time
+	TPVReport *gpsd.TPVReport
+	SKYReport *gpsd.SKYReport
 }
 
 var (
 	tpvFilter           func(r interface{})
 	skyFilter           func(r interface{})
 	notificationChannel chan PositionData
+	errorChannel        chan error
+	lastSkyReport       *gpsd.SKYReport
 )
 
 var satelliteCount = 0
 
 func init() {
+
 	tpvFilter = func(r interface{}) {
 		report := r.(*gpsd.TPVReport)
 		notificationChannel <- PositionData{
-			Lon:            report.Lon,
-			Lat:            report.Lat,
-			Alt:            report.Alt,
-			SatelliteCount: satelliteCount,
-			Time:           report.Time,
+			TPVReport: report,
+			SKYReport: lastSkyReport,
 		}
 	}
 
 	skyFilter = func(r interface{}) {
 		report := r.(*gpsd.SKYReport)
-		satelliteCount = len(report.Satellites)
-		//log.Printf("SKY device: %s tag: %s time: %s satelliteCount: %d", report.Device, report.Tag, report.Time, len(report.Satellites))
+		lastSkyReport = report
 	}
 }
 
