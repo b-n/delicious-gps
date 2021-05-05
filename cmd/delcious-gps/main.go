@@ -33,21 +33,40 @@ func nextState(currentState int, positionData location.PositionData) int {
 	have3DFix := (*positionData.TPVReport).Mode == 3
 
 	switch {
-	case (currentState < 3 && haveSkyReport && have3DFix):
+	case (haveSkyReport && have3DFix):
 		newState = 3
 		logging.Info("Acquired 3D Fix, running...")
 		break
-	case (currentState < 2 && haveSkyReport):
+	case (haveSkyReport && !have3DFix):
 		newState = 2
 		logging.Info("Waiting on 3D Fix")
 		break
-	case (currentState < 1 && !haveSkyReport):
+	case (!haveSkyReport):
 		newState = 1
 		logging.Info("Waiting on SKY Report")
 		break
 	}
 	logging.Debugf("newState: %+v", newState)
 	return newState
+}
+
+func storePositionData(pos location.PositionData, db *gorm.DB) error {
+	tpv := *pos.TPVReport
+	sky := *pos.SKYReport
+	result := db.Create(&persistence.PositionData{
+		Lon:            tpv.Lon,
+		Lat:            tpv.Lat,
+		Alt:            tpv.Alt,
+		Velocity:       tpv.Speed,
+		SatelliteCount: len(sky.Satellites),
+		Time:           tpv.Time,
+		ErrorLon:       tpv.Epx,
+		ErrorLat:       tpv.Epy,
+		ErrorAlt:       tpv.Epv,
+		ErrorVelocity:  tpv.Eps,
+	})
+
+	return result.Error
 }
 
 func main() {
@@ -64,16 +83,19 @@ func main() {
 	for {
 		select {
 		case v := <-locations:
-			tpv := *v.TPVReport
-			sky := *v.SKYReport
-			logging.Debugf("TPVReport: %+v", tpv)
-			logging.Debugf("SKYReport: %+v", sky)
+			logging.Debugf("TPVReport: %+v", *v.TPVReport)
+			if v.SKYReport != nil {
+				logging.Debugf("SKYReport: %+v", *v.SKYReport)
+			}
 			logging.Debugf("CurrentState: %+v", state)
 			state = nextState(state, v)
 
 			if state < 3 {
 				break
 			}
+
+			err = storePositionData(v, db)
+			logging.Check(err)
 
 			logging.Debug("Processing location data")
 		case <-gpsdDone:
