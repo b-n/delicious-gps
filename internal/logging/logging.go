@@ -19,8 +19,8 @@ func Check(e error) {
 	}
 }
 
-func Init(outputDebug bool) {
-	outputDebug = outputDebug
+func Init(debugMode bool) {
+	outputDebug = debugMode
 	timeFormat := log.Ldate | log.Ltime
 
 	debugLogger = log.New(os.Stdout, "DEBUG: ", timeFormat)

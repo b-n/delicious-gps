@@ -1,6 +1,8 @@
 package location
 
 import (
+	"context"
+
 	"github.com/stratoberry/go-gpsd"
 )
 
@@ -21,7 +23,6 @@ var (
 var satelliteCount = 0
 
 func init() {
-
 	tpvFilter = func(r interface{}) {
 		report := r.(*gpsd.TPVReport)
 		notificationChannel <- PositionData{
@@ -37,7 +38,7 @@ func init() {
 }
 
 // Listen will start a listener for the gpsd service
-func Listen(c chan PositionData) (chan bool, error) {
+func Listen(ctx context.Context, c chan PositionData) (chan bool, error) {
 	notificationChannel = c
 
 	gps, err := gpsd.Dial(gpsd.DefaultAddress)
@@ -49,5 +50,15 @@ func Listen(c chan PositionData) (chan bool, error) {
 	gps.AddFilter("SKY", skyFilter)
 
 	done := gps.Watch()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				<-done
+			}
+		}
+	}()
+
 	return done, nil
 }
