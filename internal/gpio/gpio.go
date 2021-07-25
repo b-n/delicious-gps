@@ -67,7 +67,7 @@ func watchOutputChannel(ctx context.Context, newState chan uint8) {
 
 func colorFromState(value uint8) uint32 {
 	// Remove MSB
-	switch value << 1 >> 1 {
+	switch value & 127 {
 	case 0:
 		return uint32(0x0000ff)
 	case 1:
