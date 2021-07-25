@@ -1,6 +1,15 @@
 package location
 
-func CalculateState(pd PositionData) uint8 {
+type GPS_STATUS uint8
+
+const (
+	WAIT_SKY GPS_STATUS = iota
+	WAIT_FIX
+	FIX_WEAK
+	FIX_GOOD
+)
+
+func CalculateState(pd PositionData) GPS_STATUS {
 	haveSkyReport := pd.SKYReport != nil
 	have3DFix := (*pd.TPVReport).Mode == 3
 	sats := 0
@@ -10,13 +19,13 @@ func CalculateState(pd PositionData) uint8 {
 
 	switch {
 	case !haveSkyReport:
-		return 1
+		return WAIT_SKY
 	case haveSkyReport && !have3DFix:
-		return 2
+		return WAIT_FIX
 	case haveSkyReport && have3DFix && sats <= 6:
-		return 3
+		return FIX_WEAK
 	case haveSkyReport && have3DFix && sats > 6:
-		return 4
+		return FIX_GOOD
 	default:
 		return 255
 	}

@@ -19,16 +19,22 @@ type Options struct {
 }
 
 var (
-	db        *gorm.DB
-	opts      Options
-	appState  uint8
+	db           *gorm.DB
+	opts         Options
+	appState     uint8
+	gpsStateDict = map[location.GPS_STATUS]uint8{
+		location.WAIT_SKY: 0,
+		location.WAIT_FIX: 1,
+		location.FIX_WEAK: 2,
+		location.FIX_GOOD: 3,
+	}
 	stateDict = map[uint8]string{
-		0:   "Initializing",
-		1:   "Waiting on SKY Report",
-		2:   "Waiting on 3D Fix",
-		3:   "Acquired 3D Fix, limited satellites (<=6)",
-		4:   "Acquired 3D Fix, good satellites (>6)",
-		255: "ERROR",
+		gpsStateDict[location.WAIT_SKY]: "Waiting on SKY Report",
+		gpsStateDict[location.WAIT_FIX]: "Waiting on 3D Fix",
+		gpsStateDict[location.FIX_WEAK]: "Acquired 3D Fix, limited satellites (<=6)",
+		gpsStateDict[location.FIX_GOOD]: "Acquired 3D Fix, good satellites (>6)",
+		254:                             "UNKNOWN/ERROR",
+		255:                             "Initializing",
 	}
 )
 
@@ -88,7 +94,8 @@ func main() {
 	displayChannel, err := gpio.Open(ctx, controlsChannel)
 	logging.Check(err)
 
-	appState = 0
+	appState = 255
+	logging.Info(stateDict[appState])
 	displayChannel <- appState
 
 	for {
@@ -99,7 +106,7 @@ func main() {
 				logging.Debugf("SKYReport: %+v", *v.SKYReport)
 			}
 
-			if next := location.CalculateState(v); next != appState {
+			if next := gpsStateDict[location.CalculateState(v)]; next != appState {
 				appState = next
 				displayChannel <- appState
 				logging.Info(stateDict[appState])
