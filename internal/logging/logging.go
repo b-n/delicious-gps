@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -23,9 +24,9 @@ func Init(debugMode bool) {
 	outputDebug = debugMode
 	timeFormat := log.Ldate | log.Ltime
 
-	debugLogger = log.New(os.Stdout, "DEBUG: ", timeFormat)
-	infoLogger = log.New(os.Stdout, "INFO: ", timeFormat)
-	errorLogger = log.New(os.Stderr, "ERROR: ", timeFormat)
+	debugLogger = log.New(os.Stdout, "", timeFormat)
+	infoLogger = log.New(os.Stdout, "", timeFormat)
+	errorLogger = log.New(os.Stderr, "", timeFormat)
 }
 
 func Debug(s string) {
@@ -34,7 +35,7 @@ func Debug(s string) {
 
 func Debugf(s string, v ...interface{}) {
 	if outputDebug {
-		debugLogger.Printf(s, v...)
+		debugLogger.Printf("[DEBUG]: %s", fmt.Sprintf(s, v...))
 	}
 }
 
@@ -43,7 +44,7 @@ func Info(s string) {
 }
 
 func Infof(s string, v ...interface{}) {
-	infoLogger.Printf(s, v...)
+	infoLogger.Printf("[INFO]: %s", fmt.Sprintf(s, v...))
 }
 
 func Error(e error) {
