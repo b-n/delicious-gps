@@ -86,7 +86,7 @@ func main() {
 
 	// Setup location listener
 	locations := make(chan location.PositionData)
-	gpsdDone, err := location.Listen(ctx, locations)
+	err := location.Listen(ctx, locations)
 	logging.Check(err)
 
 	// Setup status indicator
@@ -121,8 +121,7 @@ func main() {
 			logging.Check(err)
 		case v := <-controlsChannel:
 			logging.Infof("Button Released: %v", v)
-		case <-gpsdDone:
-			os.Exit(0)
+			return
 		}
 	}
 }

@@ -3,6 +3,7 @@ package location
 import (
 	"context"
 
+	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/stratoberry/go-gpsd"
 )
 
@@ -38,12 +39,12 @@ func init() {
 }
 
 // Listen will start a listener for the gpsd service
-func Listen(ctx context.Context, c chan PositionData) (chan bool, error) {
+func Listen(ctx context.Context, c chan PositionData) error {
 	notificationChannel = c
 
 	gps, err := gpsd.Dial(gpsd.DefaultAddress)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	gps.AddFilter("TPV", tpvFilter)
@@ -55,10 +56,14 @@ func Listen(ctx context.Context, c chan PositionData) (chan bool, error) {
 		for {
 			select {
 			case <-ctx.Done():
-				<-done
+				logging.Debug("Stopping GPS Listener")
+				done <- true
+				return
 			}
 		}
 	}()
 
-	return done, nil
+	logging.Debug("Start GPS Listener")
+
+	return nil
 }

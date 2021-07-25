@@ -45,6 +45,7 @@ func watchInputChannel(ctx context.Context, inputState chan uint8) {
 			logging.Debug("Button Release received")
 			inputState <- 1
 		case <-ctx.Done():
+			logging.Debug("Stopping button events watching")
 			return
 		}
 	}
@@ -62,6 +63,7 @@ func watchOutputChannel(ctx context.Context, newState chan uint8) {
 				led.Color(colorFromState(state))
 			}
 		case <-ctx.Done():
+			logging.Debug("Stopping status changes watching")
 			return
 		}
 	}
