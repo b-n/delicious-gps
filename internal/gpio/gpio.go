@@ -27,7 +27,7 @@ func Open(ctx context.Context, inputChannel chan uint8) (chan uint8, error) {
 	go watchOutputChannel(ctx, outputChannel)
 
 	// Setup input
-	if button, err = simple_button.NewSimpleButton(ctx, 18); err != nil {
+	if button, err = simple_button.NewSimpleButton(ctx, 4); err != nil {
 		return nil, err
 	}
 	go watchInputChannel(ctx, inputChannel)
