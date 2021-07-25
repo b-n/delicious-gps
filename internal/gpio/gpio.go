@@ -8,6 +8,13 @@ import (
 	"github.com/b-n/delicious-gps/simple_led"
 )
 
+type InputEvent uint8
+
+const (
+	PRESSED InputEvent = iota
+	RELEASED
+)
+
 var (
 	button *simple_button.Button
 )
@@ -47,16 +54,16 @@ func OpenOutput(ctx context.Context, done chan bool, startState uint8) (chan uin
 	return outputChannel, nil
 }
 
-func ListenInput(ctx context.Context, done chan bool, inputChannel chan uint8) error {
-	button, err := simple_button.NewSimpleButton(4)
+func ListenInput(ctx context.Context, done chan bool, inputEvents chan InputEvent) error {
+	buttonEvents, err := simple_button.Init()
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		logging.Debug("Watching Input")
-		buttonReleased := make(chan bool)
-		button.Listen(buttonReleased)
+		simple_button.NewSimpleButton(4)
+
 		for {
 			select {
 			case e := <-buttonEvents:
@@ -69,7 +76,8 @@ func ListenInput(ctx context.Context, done chan bool, inputChannel chan uint8) e
 				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Input")
-				button.Close()
+				simple_button.Close()
+				close(inputEvents)
 
 				done <- true
 				return

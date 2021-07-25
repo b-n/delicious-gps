@@ -95,7 +95,7 @@ func main() {
 	logging.Check(err)
 
 	// Setup button input
-	controlsChannel := make(chan uint8)
+	controlsChannel := make(chan gpio.InputEvent)
 	err = gpio.ListenInput(ctx, done, controlsChannel)
 	logging.Check(err)
 
