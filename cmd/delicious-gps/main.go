@@ -16,8 +16,9 @@ import (
 )
 
 type Options struct {
-	ShowDebug bool
-	Database  string
+	Debug        bool
+	DebugReports bool
+	Database     string
 }
 
 var (
@@ -44,7 +45,8 @@ func initOptions(args []string) Options {
 	opts := Options{}
 
 	flag.StringVar(&opts.Database, "database", "data.db", "the name of the database file to output to")
-	flag.BoolVar(&opts.ShowDebug, "debug", false, "if true, output debug logging")
+	flag.BoolVar(&opts.Debug, "debug", false, "if true, output debug logging")
+	flag.BoolVar(&opts.DebugReports, "debug-reports", false, "Turns on debuging of raw reports (requires --debug)")
 
 	flag.Parse()
 
@@ -53,7 +55,7 @@ func initOptions(args []string) Options {
 
 func init() {
 	opts = initOptions(os.Args)
-	logging.Init(opts.ShowDebug)
+	logging.Init(opts.Debug)
 
 	gormdb, err := persistence.Open(sqlite.Open(opts.Database))
 	logging.Check(err)
@@ -113,9 +115,11 @@ func main() {
 	for {
 		select {
 		case v := <-locations:
-			//logging.Debugf("TPVReport: %+v", *v.TPVReport)
-			if v.SKYReport != nil {
-				//logging.Debugf("SKYReport: %+v", *v.SKYReport)
+			if opts.DebugReports {
+				logging.Debugf("TPVReport: %+v", *v.TPVReport)
+				if v.SKYReport != nil {
+					logging.Debugf("SKYReport: %+v", *v.SKYReport)
+				}
 			}
 
 			if next := gpsStateDict[location.CalculateState(v)]; next != appState {

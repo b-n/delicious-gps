@@ -24,20 +24,19 @@ func OpenOutput(ctx context.Context, done chan bool) (chan uint8, error) {
 	led.Color(uint32(0x0000ff))
 
 	go func() {
-		logging.Info("Opened Output")
+		logging.Debug("Opened Output")
 		for {
 			select {
 			case s := <-outputChannel:
 				if s != state {
-					logging.Debugf("New state %d received. Current %d", s, state)
 					state = s
 					led.Color(colorFromState(state))
 				}
 			case <-ctx.Done():
+				logging.Debug("Stopping Output")
+
 				led.Color(uint32(0x000000))
 				led.Close()
-
-				logging.Info("Stopping Output")
 
 				done <- true
 				return
@@ -53,15 +52,21 @@ func ListenInput(ctx context.Context, done chan bool, inputChannel chan uint8) e
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		logging.Debug("Watching Input")
 		buttonReleased := make(chan bool)
 		button.Listen(buttonReleased)
 		for {
 			select {
-			case <-buttonReleased:
-				logging.Debug("Button Release received")
-				inputChannel <- 1
+			case e := <-buttonEvents:
+				logging.Debugf("Received Input: %v", e)
+
+				// TODO: buffer the events to main
+				select {
+				case inputEvents <- e.event:
+				default:
+				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Input")
 				button.Close()

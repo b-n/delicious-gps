@@ -56,14 +56,14 @@ func Listen(ctx context.Context, done chan bool, c chan PositionData) error {
 		for {
 			select {
 			case <-ctx.Done():
-				logging.Debug("Stopping GPS Listener")
+				logging.Info("Stopping GPS")
 				done <- true
 				return
 			}
 		}
 	}()
 
-	logging.Debug("Start GPS Listener")
+	logging.Info("Starting GPS")
 
 	return nil
 }
