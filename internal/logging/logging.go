@@ -34,7 +34,7 @@ func Debug(s string) {
 
 func Debugf(s string, v ...interface{}) {
 	if outputDebug {
-		debugLogger.Printf(s, v)
+		debugLogger.Printf(s, v...)
 	}
 }
 
