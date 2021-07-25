@@ -86,3 +86,4 @@ manuall clear it.
   - [ ] Buttons
   - [x] neopixel (for feedback)
 - [ ] Make it all work
+- [ ] Buffer the database write. Every now and then it takes some time, and blocks the main thread
