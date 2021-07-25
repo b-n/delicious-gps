@@ -2,8 +2,8 @@ package gpio
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/b-n/delicious-gps/simple_button"
 	"github.com/b-n/delicious-gps/simple_led"
 )
@@ -36,12 +36,13 @@ func Open(ctx context.Context, inputChannel chan uint8) (chan uint8, error) {
 }
 
 func watchInputChannel(ctx context.Context, inputState chan uint8) {
+	logging.Debug("Watching for button events (input)")
 	buttonReleased := make(chan bool)
 	button.Listen(buttonReleased)
 	for {
 		select {
 		case <-buttonReleased:
-			fmt.Printf("Button Press Received")
+			logging.Debug("Button Release received")
 			inputState <- 1
 		case <-ctx.Done():
 			return
@@ -50,12 +51,13 @@ func watchInputChannel(ctx context.Context, inputState chan uint8) {
 }
 
 func watchOutputChannel(ctx context.Context, newState chan uint8) {
+	logging.Debug("Watching for status changes (output)")
 	defer led.Close()
 	for {
 		select {
 		case s := <-newState:
 			if s != state {
-				fmt.Printf("New state %d received", s)
+				logging.Debugf("New state %d received. Current %d", s, state)
 				state = s
 				led.Color(colorFromState(state))
 			}
