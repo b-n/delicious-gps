@@ -119,6 +119,8 @@ func main() {
 			err = storePositionData(v, db)
 			logging.Debug("Stored Position Record")
 			logging.Check(err)
+		case v := <-controlsChannel:
+			logging.Infof("Button Released: %v", v)
 		case <-gpsdDone:
 			os.Exit(0)
 		}

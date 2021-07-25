@@ -19,8 +19,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rpi-ws281x/rpi-ws281x-go v1.0.8 h1:fyyjhZTi2vq5XR20dvM0VHAIrYePE5R7SssUAgZoHH8=
 github.com/rpi-ws281x/rpi-ws281x-go v1.0.8/go.mod h1:bYxseeVKIJy6hmt/UFJ7ty2ZbpZ5UMHNSTWT5rrmxjg=
-github.com/stianeikeland/go-rpio v1.0.0 h1:9a5DDConuUBSBR4mYsr9dV0uAxGypybCumg0KR2o3fc=
-github.com/stianeikeland/go-rpio v4.2.0+incompatible h1:CUOlIxdJdT+H1obJPsmg8byu7jMSECLfAN9zynm5QGo=
 github.com/stianeikeland/go-rpio/v4 v4.4.0 h1:LScvNyXHF412co42LG5t7bvBDbtDAhLF828ebaGqmjA=
 github.com/stianeikeland/go-rpio/v4 v4.4.0/go.mod h1:BkK52zk+FRk8wCTDf88/86Sojc+NfUiCAHd1ZV3RuTM=
 github.com/stratoberry/go-gpsd v0.0.0-20161204231141-54ddcfa61f47 h1:VrBVsttOEYT6UQZ0yv0D+Dg+TBPnvDB3bdiNdmiUFsQ=

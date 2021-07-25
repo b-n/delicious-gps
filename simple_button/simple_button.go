@@ -2,7 +2,6 @@ package simple_button
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/stianeikeland/go-rpio/v4"
@@ -26,7 +25,6 @@ func (b *Button) Listen(state chan bool) {
 	go func() {
 		for {
 			if b.rpio_pin.EdgeDetected() {
-				fmt.Printf("Edge Detected")
 				state <- true
 			}
 		}
