@@ -43,7 +43,7 @@ func Info(s string) {
 }
 
 func Infof(s string, v ...interface{}) {
-	infoLogger.Printf(s, v)
+	infoLogger.Printf(s, v...)
 }
 
 func Error(e error) {
