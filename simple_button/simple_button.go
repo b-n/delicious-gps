@@ -1,7 +1,6 @@
 package simple_button
 
 import (
-	"context"
 	"os"
 
 	"github.com/stianeikeland/go-rpio/v4"
@@ -11,6 +10,10 @@ const (
 	PullUp   = iota
 	PullDown = iota
 	PullOff  = iota
+)
+
+var (
+	initialized bool
 )
 
 type Button struct {
@@ -31,11 +34,13 @@ func (b *Button) Listen(state chan bool) {
 	}()
 }
 
-var (
-	initialized bool
-)
+func (b *Button) Close() {
+	if initialized {
+		rpio.Close()
+	}
+}
 
-func NewSimpleButton(ctx context.Context, gpio_pin uint8) (*Button, error) {
+func NewSimpleButton(gpio_pin uint8) (*Button, error) {
 	// Allow the application to run, even if gpio isn't available (for debugging)
 	if _, err := os.Stat("/dev/gpiomem"); os.IsNotExist(err) {
 		return &Button{}, nil
@@ -48,16 +53,6 @@ func NewSimpleButton(ctx context.Context, gpio_pin uint8) (*Button, error) {
 		}
 		initialized = true
 	}
-
-	go func() {
-		defer rpio.Close()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 
 	pin := rpio.Pin(gpio_pin)
 	pin.Input()

@@ -9,64 +9,70 @@ import (
 )
 
 var (
-	state  uint8
-	led    *simple_led.Lamp
 	button *simple_button.Button
 )
 
-func Open(ctx context.Context, inputChannel chan uint8) (chan uint8, error) {
+func OpenOutput(ctx context.Context, done chan bool) (chan uint8, error) {
 	outputChannel := make(chan uint8)
-	state = 255
-	err := error(nil)
+	state := uint8(255)
 
-	// Setup output
-	if led, err = simple_led.NewSimpleLED(); err != nil {
+	led, err := simple_led.NewSimpleLED()
+	if err != nil {
 		return nil, err
 	}
+
 	led.Color(uint32(0x0000ff))
-	go watchOutputChannel(ctx, outputChannel)
 
-	// Setup input
-	if button, err = simple_button.NewSimpleButton(ctx, 4); err != nil {
-		return nil, err
-	}
-	go watchInputChannel(ctx, inputChannel)
+	go func() {
+		logging.Info("Opened Output")
+		for {
+			select {
+			case s := <-outputChannel:
+				if s != state {
+					logging.Debugf("New state %d received. Current %d", s, state)
+					state = s
+					led.Color(colorFromState(state))
+				}
+			case <-ctx.Done():
+				led.Color(uint32(0x000000))
+				led.Close()
+
+				logging.Info("Stopping Output")
+
+				done <- true
+				return
+			}
+		}
+	}()
 
 	return outputChannel, nil
 }
 
-func watchInputChannel(ctx context.Context, inputState chan uint8) {
-	logging.Debug("Watching for button events (input)")
-	buttonReleased := make(chan bool)
-	button.Listen(buttonReleased)
-	for {
-		select {
-		case <-buttonReleased:
-			logging.Debug("Button Release received")
-			inputState <- 1
-		case <-ctx.Done():
-			logging.Debug("Stopping button events watching")
-			return
-		}
+func ListenInput(ctx context.Context, done chan bool, inputChannel chan uint8) error {
+	button, err := simple_button.NewSimpleButton(4)
+	if err != nil {
+		return err
 	}
-}
+	go func() {
+		logging.Debug("Watching Input")
+		buttonReleased := make(chan bool)
+		button.Listen(buttonReleased)
+		for {
+			select {
+			case <-buttonReleased:
+				logging.Debug("Button Release received")
+				inputChannel <- 1
+			case <-ctx.Done():
+				logging.Debug("Stopping Input")
+				button.Close()
 
-func watchOutputChannel(ctx context.Context, newState chan uint8) {
-	logging.Debug("Watching for status changes (output)")
-	defer led.Close()
-	for {
-		select {
-		case s := <-newState:
-			if s != state {
-				logging.Debugf("New state %d received. Current %d", s, state)
-				state = s
-				led.Color(colorFromState(state))
+				done <- true
+				return
 			}
-		case <-ctx.Done():
-			logging.Debug("Stopping status changes watching")
-			return
 		}
-	}
+	}()
+
+	return nil
 }
 
 func colorFromState(value uint8) uint32 {

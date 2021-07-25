@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/b-n/delicious-gps/internal/gpio"
 	"github.com/b-n/delicious-gps/internal/location"
@@ -82,28 +84,38 @@ func main() {
 	logging.Info("delcious-gps Started")
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	done := make(chan bool)
 
 	// Setup location listener
 	locations := make(chan location.PositionData)
-	err := location.Listen(ctx, locations)
+	err := location.Listen(ctx, done, locations)
 	logging.Check(err)
 
-	// Setup status indicator
+	// Setup button input
 	controlsChannel := make(chan uint8)
-	displayChannel, err := gpio.Open(ctx, controlsChannel)
+	err = gpio.ListenInput(ctx, done, controlsChannel)
 	logging.Check(err)
+
+	// Setup led output
+	displayChannel, err := gpio.OpenOutput(ctx, done)
+	logging.Check(err)
+
+	// Handle UNIX Signals
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
 	appState = 255
 	logging.Info(stateDict[appState])
 	displayChannel <- appState
 
+	cancelling := false
+
 	for {
 		select {
 		case v := <-locations:
-			logging.Debugf("TPVReport: %+v", *v.TPVReport)
+			//logging.Debugf("TPVReport: %+v", *v.TPVReport)
 			if v.SKYReport != nil {
-				logging.Debugf("SKYReport: %+v", *v.SKYReport)
+				//logging.Debugf("SKYReport: %+v", *v.SKYReport)
 			}
 
 			if next := gpsStateDict[location.CalculateState(v)]; next != appState {
@@ -119,8 +131,22 @@ func main() {
 			err = storePositionData(v, db)
 			logging.Debug("Stored Position Record")
 			logging.Check(err)
-		case v := <-controlsChannel:
-			logging.Infof("Button Released: %v", v)
+		case <-controlsChannel:
+			if !cancelling {
+				cancelling = true
+				cancel()
+				for i := 3; i > 0; i-- {
+					<-done
+				}
+
+				return
+			}
+		case <-sigs:
+			cancel()
+			for i := 3; i > 0; i-- {
+				<-done
+			}
+
 			return
 		}
 	}

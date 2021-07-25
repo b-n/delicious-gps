@@ -39,7 +39,7 @@ func init() {
 }
 
 // Listen will start a listener for the gpsd service
-func Listen(ctx context.Context, c chan PositionData) error {
+func Listen(ctx context.Context, done chan bool, c chan PositionData) error {
 	notificationChannel = c
 
 	gps, err := gpsd.Dial(gpsd.DefaultAddress)
@@ -50,7 +50,7 @@ func Listen(ctx context.Context, c chan PositionData) error {
 	gps.AddFilter("TPV", tpvFilter)
 	gps.AddFilter("SKY", skyFilter)
 
-	done := gps.Watch()
+	gps.Watch()
 
 	go func() {
 		for {
