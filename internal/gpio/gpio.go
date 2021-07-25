@@ -12,9 +12,9 @@ var (
 	button *simple_button.Button
 )
 
-func OpenOutput(ctx context.Context, done chan bool) (chan uint8, error) {
+func OpenOutput(ctx context.Context, done chan bool, startState uint8) (chan uint8, error) {
 	outputChannel := make(chan uint8)
-	state := uint8(255)
+	state := startState
 
 	led, err := simple_led.NewSimpleLED()
 	if err != nil {

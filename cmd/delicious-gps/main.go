@@ -36,8 +36,9 @@ var (
 		gpsStateDict[location.WAIT_FIX]: "Waiting on 3D Fix",
 		gpsStateDict[location.FIX_WEAK]: "Acquired 3D Fix, limited satellites (<=6)",
 		gpsStateDict[location.FIX_GOOD]: "Acquired 3D Fix, good satellites (>6)",
-		254:                             "UNKNOWN/ERROR",
-		255:                             "Initializing",
+		125:                             "UNKNOWN/ERROR",
+		126:                             "Exiting",
+		127:                             "Initializing",
 	}
 )
 
@@ -99,18 +100,29 @@ func main() {
 	logging.Check(err)
 
 	// Setup led output
-	displayChannel, err := gpio.OpenOutput(ctx, done)
+	displayChannel, err := gpio.OpenOutput(ctx, done, 127)
 	logging.Check(err)
 
 	// Handle UNIX Signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
-	appState = 255
+	// Set default state
+	appState = 127
 	logging.Info(stateDict[appState])
 	displayChannel <- appState
 
-	cancelling := false
+	quit := func() {
+		if appState != 126 {
+			appState = 126
+			logging.Info("Exiting")
+			cancel()
+			for i := 3; i > 0; i-- {
+				<-done
+			}
+			return
+		}
+	}
 
 	for {
 		select {
@@ -122,8 +134,8 @@ func main() {
 				}
 			}
 
-			if next := gpsStateDict[location.CalculateState(v)]; next != appState {
-				appState = next
+			if nextState := gpsStateDict[location.CalculateState(v)]; nextState != appState && appState != 126 {
+				appState = nextState
 				displayChannel <- appState
 				logging.Info(stateDict[appState])
 			}
@@ -136,21 +148,9 @@ func main() {
 			logging.Debug("Stored Position Record")
 			logging.Check(err)
 		case <-controlsChannel:
-			if !cancelling {
-				cancelling = true
-				cancel()
-				for i := 3; i > 0; i-- {
-					<-done
-				}
-
-				return
-			}
+			logging.Debug("BUTTONS")
 		case <-sigs:
-			cancel()
-			for i := 3; i > 0; i-- {
-				<-done
-			}
-
+			quit()
 			return
 		}
 	}
