@@ -65,6 +65,8 @@ go run cmd/delicious-gps/main.go
 
 See Building above. You can in theory run this with the same command as local testing, but you'd need the build chain available on the raspberry pi (discouraged)
 
+Need to test lots of things on the Pi? Set `PI_IP_ADDRESS` environmen variable e.g. `export PI_IP_ADDRESS=<ip address>` then `make build-and-upload`
+
 ## Database
 
 The database will output to data.db and is a simple sqlite3 database.

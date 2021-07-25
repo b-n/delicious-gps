@@ -25,6 +25,9 @@ build-rpi:
 docker-builder:
 	docker buildx build --platform $(PLATFORM) --tag delicious-builder --file Dockerfile --progress=plain --build-arg CACHE_LOCATION=$(DOCKER_GO_CACHE) .
 
+build-and-upload: build-rpi
+	scp $(TARGET) pi@${PI_IP_ADDRESS}:~/delicious-gps
+
 clean:
 	$(RM) -r $(BUILD_DIR)
 	mkdir $(BUILD_DIR)
