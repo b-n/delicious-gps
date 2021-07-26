@@ -19,13 +19,13 @@ var (
 	button *simple_button.Button
 )
 
-func OpenOutput(ctx context.Context, done chan bool, startState uint8) (chan uint8, error) {
-	outputChannel := make(chan uint8)
+func OpenOutput(ctx context.Context, done chan bool, c chan uint8, startState uint8) error {
+	outputChannel := c
 	state := startState
 
 	led, err := simple_led.NewSimpleLED()
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	led.Color(uint32(0x0000ff))
@@ -51,13 +51,15 @@ func OpenOutput(ctx context.Context, done chan bool, startState uint8) (chan uin
 		}
 	}()
 
-	return outputChannel, nil
+	return nil
 }
 
-func ListenInput(ctx context.Context, done chan bool, inputEvents chan InputEvent) error {
+func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
+	inputEvents := make(chan InputEvent, 1)
+
 	buttonEvents, err := simple_button.Init()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	go func() {
@@ -68,24 +70,24 @@ func ListenInput(ctx context.Context, done chan bool, inputEvents chan InputEven
 			select {
 			case e := <-buttonEvents:
 				logging.Debugf("Received Input: %v", e)
-
-				// TODO: buffer the events to main
-				select {
-				case inputEvents <- e.event:
-				default:
+				if e.Event == simple_button.PRESSED {
+					// TODO: buffer the events to main
+					select {
+					case inputEvents <- PRESSED:
+					default:
+					}
 				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Input")
-				simple_button.Close()
 				close(inputEvents)
-
+				simple_button.Close()
 				done <- true
 				return
 			}
 		}
 	}()
 
-	return nil
+	return inputEvents, nil
 }
 
 func colorFromState(value uint8) uint32 {

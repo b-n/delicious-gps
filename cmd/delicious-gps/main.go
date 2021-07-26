@@ -90,17 +90,16 @@ func main() {
 	done := make(chan bool)
 
 	// Setup location listener
-	locations := make(chan location.PositionData)
-	err := location.Listen(ctx, done, locations)
+	locations, err := location.Listen(ctx, done)
 	logging.Check(err)
 
 	// Setup button input
-	controlsChannel := make(chan gpio.InputEvent)
-	err = gpio.ListenInput(ctx, done, controlsChannel)
+	inputEvents, err := gpio.ListenInput(ctx, done)
 	logging.Check(err)
 
 	// Setup led output
-	displayChannel, err := gpio.OpenOutput(ctx, done, 127)
+	display := make(chan uint8)
+	err = gpio.OpenOutput(ctx, done, display, 127)
 	logging.Check(err)
 
 	// Handle UNIX Signals
@@ -110,12 +109,13 @@ func main() {
 	// Set default state
 	appState = 127
 	logging.Info(stateDict[appState])
-	displayChannel <- appState
+	display <- appState
 
 	quit := func() {
 		if appState != 126 {
 			appState = 126
 			logging.Info("Exiting")
+			close(display)
 			cancel()
 			for i := 3; i > 0; i-- {
 				<-done
@@ -136,7 +136,7 @@ func main() {
 
 			if nextState := gpsStateDict[location.CalculateState(v)]; nextState != appState && appState != 126 {
 				appState = nextState
-				displayChannel <- appState
+				display <- appState
 				logging.Info(stateDict[appState])
 			}
 
@@ -147,7 +147,7 @@ func main() {
 			err = storePositionData(v, db)
 			logging.Debug("Stored Position Record")
 			logging.Check(err)
-		case <-controlsChannel:
+		case <-inputEvents:
 			logging.Debug("BUTTONS")
 		case <-sigs:
 			quit()

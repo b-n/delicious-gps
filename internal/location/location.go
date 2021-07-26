@@ -14,41 +14,56 @@ type PositionData struct {
 }
 
 var (
+	initialized         bool
 	tpvFilter           func(r interface{})
 	skyFilter           func(r interface{})
 	notificationChannel chan PositionData
 	errorChannel        chan error
 	lastSkyReport       *gpsd.SKYReport
+	lastTpvReport       *gpsd.TPVReport
 )
 
 var satelliteCount = 0
 
+func notify() {
+	if !initialized {
+		return
+	}
+	data := PositionData{
+		TPVReport: lastTpvReport,
+		SKYReport: lastSkyReport,
+	}
+	select {
+	case notificationChannel <- data:
+	default:
+		//logger.Debug("location.go: dropped notification, channel busy")
+	}
+}
+
 func init() {
 	tpvFilter = func(r interface{}) {
-		report := r.(*gpsd.TPVReport)
-		notificationChannel <- PositionData{
-			TPVReport: report,
-			SKYReport: lastSkyReport,
-		}
+		lastTpvReport = r.(*gpsd.TPVReport)
+		notify()
 	}
 
 	skyFilter = func(r interface{}) {
-		report := r.(*gpsd.SKYReport)
-		lastSkyReport = report
+		lastSkyReport = r.(*gpsd.SKYReport)
 	}
 }
 
 // Listen will start a listener for the gpsd service
-func Listen(ctx context.Context, done chan bool, c chan PositionData) error {
-	notificationChannel = c
+func Listen(ctx context.Context, done chan bool) (chan PositionData, error) {
+	notificationChannel = make(chan PositionData, 1)
 
 	gps, err := gpsd.Dial(gpsd.DefaultAddress)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gps.AddFilter("TPV", tpvFilter)
 	gps.AddFilter("SKY", skyFilter)
+
+	initalized := true
 
 	gps.Watch()
 
@@ -57,6 +72,8 @@ func Listen(ctx context.Context, done chan bool, c chan PositionData) error {
 			select {
 			case <-ctx.Done():
 				logging.Info("Stopping GPS")
+				initalized = false
+				close(notificationChannel)
 				done <- true
 				return
 			}
@@ -65,5 +82,5 @@ func Listen(ctx context.Context, done chan bool, c chan PositionData) error {
 
 	logging.Info("Starting GPS")
 
-	return nil
+	return notificationChannel, nil
 }

@@ -23,8 +23,8 @@ var (
 )
 
 type EventPayload struct {
-	pin   uint8
-	event ButtonEvent
+	Pin   uint8
+	Event ButtonEvent
 }
 
 type Button struct {
