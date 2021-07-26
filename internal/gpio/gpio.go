@@ -62,6 +62,8 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 		return nil, err
 	}
 
+	initialized := true
+
 	go func() {
 		logging.Debug("Watching Input")
 		simple_button.NewSimpleButton(4)
@@ -69,6 +71,9 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 		for {
 			select {
 			case e := <-buttonEvents:
+				if !initialized {
+					break
+				}
 				logging.Debugf("Received Input: %v", e)
 				if e.Event == simple_button.PRESSED {
 					// TODO: buffer the events to main
@@ -79,6 +84,7 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Input")
+				initialized = false
 				close(inputEvents)
 				simple_button.Close()
 				done <- true

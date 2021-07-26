@@ -63,9 +63,9 @@ func Listen(ctx context.Context, done chan bool) (chan PositionData, error) {
 	gps.AddFilter("TPV", tpvFilter)
 	gps.AddFilter("SKY", skyFilter)
 
-	initalized := true
-
 	gps.Watch()
+
+	initalized := true
 
 	go func() {
 		for {
