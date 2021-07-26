@@ -27,6 +27,7 @@ var satelliteCount = 0
 
 func notify() {
 	if !initialized {
+		logging.Debug("GPS: dropped notify, not initialized")
 		return
 	}
 	data := PositionData{
@@ -36,7 +37,7 @@ func notify() {
 	select {
 	case notificationChannel <- data:
 	default:
-		//logger.Debug("location.go: dropped notification, channel busy")
+		logging.Debug("GPS: dropped notification, channel busy")
 	}
 }
 
@@ -65,14 +66,14 @@ func Listen(ctx context.Context, done chan bool) (chan PositionData, error) {
 
 	gps.Watch()
 
-	initalized := true
+	initialized = true
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				logging.Info("Stopping GPS")
-				initalized = false
+				initialized = false
 				close(notificationChannel)
 				done <- true
 				return
