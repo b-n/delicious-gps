@@ -35,9 +35,15 @@ func OpenOutput(ctx context.Context, done chan bool, c chan uint8, startState ui
 		for {
 			select {
 			case s := <-outputChannel:
+				logging.Debugf("Received state change to: %d from: %d", s, state)
 				if s != state {
 					state = s
 					led.Color(colorFromState(state))
+					if s&128 > 0 {
+						led.Blink(true)
+					} else {
+						led.Blink(false)
+					}
 				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Output")

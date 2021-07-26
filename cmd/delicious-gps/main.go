@@ -24,7 +24,6 @@ type Options struct {
 var (
 	db           *gorm.DB
 	opts         Options
-	appState     uint8
 	gpsStateDict = map[location.GPS_STATUS]uint8{
 		location.WAIT_SKY: 0,
 		location.WAIT_FIX: 1,
@@ -102,14 +101,23 @@ func main() {
 	err = gpio.OpenOutput(ctx, done, display, 127)
 	logging.Check(err)
 
+	notifyDisplay := func(s uint8, b bool) {
+		v := s
+		if b {
+			v = v | 128
+		}
+		display <- v
+	}
+
 	// Handle UNIX Signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
 	// Set default state
-	appState = 127
+	appState := uint8(127)
+	paused := false
 	logging.Info(stateDict[appState])
-	display <- appState
+	notifyDisplay(appState, paused)
 
 	quit := func() {
 		if appState != 126 {
@@ -136,11 +144,11 @@ func main() {
 
 			if nextState := gpsStateDict[location.CalculateState(v)]; nextState != appState && appState != 126 {
 				appState = nextState
-				display <- appState
+				notifyDisplay(appState, paused)
 				logging.Info(stateDict[appState])
 			}
 
-			if appState < 3 {
+			if appState < 3 || paused {
 				break
 			}
 
@@ -148,7 +156,8 @@ func main() {
 			logging.Debug("Stored Position Record")
 			logging.Check(err)
 		case <-inputEvents:
-			logging.Debug("BUTTONS")
+			paused = !paused
+			notifyDisplay(appState, paused)
 		case <-sigs:
 			quit()
 			return
