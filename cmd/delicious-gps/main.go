@@ -15,6 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	ERRORED     uint8 = 125
+	EXITING     uint8 = 126
+	START_STATE uint8 = 127
+)
+
 type Options struct {
 	Debug        bool
 	DebugReports bool
@@ -22,23 +28,10 @@ type Options struct {
 }
 
 var (
-	db           *gorm.DB
-	opts         Options
-	gpsStateDict = map[location.GPS_STATUS]uint8{
-		location.WAIT_SKY: 0,
-		location.WAIT_FIX: 1,
-		location.FIX_WEAK: 2,
-		location.FIX_GOOD: 3,
-	}
-	stateDict = map[uint8]string{
-		gpsStateDict[location.WAIT_SKY]: "Waiting on SKY Report",
-		gpsStateDict[location.WAIT_FIX]: "Waiting on 3D Fix",
-		gpsStateDict[location.FIX_WEAK]: "Acquired 3D Fix, limited satellites (<=6)",
-		gpsStateDict[location.FIX_GOOD]: "Acquired 3D Fix, good satellites (>6)",
-		125:                             "UNKNOWN/ERROR",
-		126:                             "Exiting",
-		127:                             "Initializing",
-	}
+	db       *gorm.DB
+	opts     Options
+	appState uint8 = START_STATE
+	paused   bool  = false
 )
 
 func initOptions(args []string) Options {
@@ -63,25 +56,6 @@ func init() {
 	db = gormdb
 }
 
-func storePositionData(v location.PositionData, db *gorm.DB) error {
-	tpv := *v.TPVReport
-	sky := *v.SKYReport
-	result := db.Create(&persistence.PositionData{
-		Lon:            tpv.Lon,
-		Lat:            tpv.Lat,
-		Alt:            tpv.Alt,
-		Velocity:       tpv.Speed,
-		SatelliteCount: len(sky.Satellites),
-		Time:           tpv.Time,
-		ErrorLon:       tpv.Epx,
-		ErrorLat:       tpv.Epy,
-		ErrorAlt:       tpv.Epv,
-		ErrorVelocity:  tpv.Eps,
-	})
-
-	return result.Error
-}
-
 func main() {
 	logging.Info("delcious-gps Started")
 
@@ -98,31 +72,19 @@ func main() {
 
 	// Setup led output
 	display := make(chan uint8)
-	err = gpio.OpenOutput(ctx, done, display, 127)
+	err = gpio.OpenOutput(ctx, done, display, START_STATE)
 	logging.Check(err)
 
-	notifyDisplay := func(s uint8, b bool) {
-		v := s
-		if b {
-			v = v | 128
-		}
-		display <- v
-	}
+	// Setup state changers
+	changeState, changePaused := NewStateChanger(display, &appState, &paused)
 
 	// Handle UNIX Signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
-	// Set default state
-	appState := uint8(127)
-	paused := false
-	logging.Info(stateDict[appState])
-	notifyDisplay(appState, paused)
-
 	quit := func() {
-		if appState != 126 {
-			appState = 126
-			logging.Info("Exiting")
+		if appState != EXITING {
+			changeState(EXITING)
 			close(display)
 			cancel()
 			for i := 3; i > 0; i-- {
@@ -142,22 +104,17 @@ func main() {
 				}
 			}
 
-			if nextState := gpsStateDict[location.CalculateState(v)]; nextState != appState && appState != 126 {
-				appState = nextState
-				notifyDisplay(appState, paused)
-				logging.Info(stateDict[appState])
-			}
+			changeState(gpsStateDict[location.CalculateState(v)])
 
 			if appState < 3 || paused {
 				break
 			}
 
+			logging.Debug("Storing Position Record")
 			err = storePositionData(v, db)
-			logging.Debug("Stored Position Record")
 			logging.Check(err)
 		case <-inputEvents:
-			paused = !paused
-			notifyDisplay(appState, paused)
+			changePaused(!paused)
 		case <-sigs:
 			quit()
 			return
