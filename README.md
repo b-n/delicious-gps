@@ -2,6 +2,8 @@
 
 A data scrubber that uses the running GPSD server to scrape the GPS data and throw it into a local sqlite database
 
+Designed and tested on a Raspberry Pi Zero W. Your mileage may vary on other devices/platforms
+
 ## Pre-requistes
 
 The system running the output binary needs to be running gpsd
@@ -16,9 +18,17 @@ The build system needs:
 - Docker buildx running with `linux/arm/v6` in `docker buildx ls`
 - [Optional] cmake, golang, etc for building and debugging locally
 
+On Linux (tested), you if you don't see `linux/arm/v6` with `docker build ls` then this should hopefully help:
+
+```sh
+docker run --privileged --rm tonistiigi/binfmt --install linux/arm/v6
+```
+
+Note: this is setting up QEMU and the likes on your host, so Best Careful and Know What You're Doing :tm:
+
 ## Building
 
-To speed up building, it is faster to build the binary locally, and then send it to the raspberry pi. Building on the Raspberry Pi will probably work, but with the docker build you should be able to avoid the "It works on my machine" problem.
+To speed up building, it is faster to build the binary "locally" (i.e. in a docker container), and then send it to the raspberry pi. Building on the Raspberry Pi will probably work, but with the docker build you should be able to avoid the "It works on my machine" problem.
 
 The process requires:
 
@@ -28,8 +38,8 @@ The process requires:
 This is as simple as:
 
 ```sh
-make docker-builder   # For the docker image
-make build-rpi        # For the raspberry pi image
+make docker-builder   # For the docker image (run once)
+make build-rpi        # For the raspberry pi image (run for each build)
 ```
 
 After this, a new binary should be available in `./bin/delicious-gps`
@@ -48,8 +58,6 @@ And then run via a ssh shell
 ssh pi@<ip-address>
 sudo ./delicious-gps
 ```
-
-TODO: Make an upstartd script to run on start
 
 ## Development
 
@@ -73,6 +81,12 @@ The database will output to data.db and is a simple sqlite3 database.
 
 Data is not cleared between runs, so expect to see old data in there unless you
 manuall clear it.
+
+## Tips
+
+**Easily find your pi**
+
+`nmap -p 22 --open 192.168.x.0/24`, but making sure x is the same as your current network
 
 ## TODO
 
