@@ -11,7 +11,7 @@ BUILD_OPTS = -v
 
 BUILD_DIR = bin
 TARGET = $(BUILD_DIR)/delicious-gps
-ENTRY_POINT = cmd/delicious-gps/main.go
+ENTRY_POINT = cmd/delicious-gps/*.go
 DOCKER_GO_CACHE = /.cache
 
 default: build
