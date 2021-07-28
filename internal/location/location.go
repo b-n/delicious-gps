@@ -11,6 +11,7 @@ import (
 type PositionData struct {
 	TPVReport *gpsd.TPVReport
 	SKYReport *gpsd.SKYReport
+	Status    GPS_STATUS
 }
 
 var (
@@ -30,14 +31,17 @@ func notify() {
 		logging.Debug("GPS: dropped notify, not initialized")
 		return
 	}
+
+	state := CalculateState(lastSkyReport, lastTpvReport)
 	data := PositionData{
 		TPVReport: lastTpvReport,
 		SKYReport: lastSkyReport,
+		Status:    state,
 	}
 	select {
 	case notificationChannel <- data:
 	default:
-		logging.Debug("GPS: dropped notification, channel busy")
+		logging.Debug("GPS: dropped notify, channel busy")
 	}
 }
 

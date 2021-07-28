@@ -104,7 +104,7 @@ func main() {
 				}
 			}
 
-			changeState(gpsStateDict[location.CalculateState(v)])
+			changeState(gpsStateDict[v.Status])
 
 			if appState < 3 || paused {
 				break

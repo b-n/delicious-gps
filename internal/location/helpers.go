@@ -1,5 +1,7 @@
 package location
 
+import "github.com/stratoberry/go-gpsd"
+
 type GPS_STATUS uint8
 
 const (
@@ -9,12 +11,12 @@ const (
 	FIX_GOOD
 )
 
-func CalculateState(pd PositionData) GPS_STATUS {
-	haveSkyReport := pd.SKYReport != nil
-	have3DFix := (*pd.TPVReport).Mode == 3
+func CalculateState(sky *gpsd.SKYReport, tpv *gpsd.TPVReport) GPS_STATUS {
+	haveSkyReport := sky != nil
+	have3DFix := tpv.Mode == 3
 	sats := 0
 	if haveSkyReport {
-		sats = len((*pd.SKYReport).Satellites)
+		sats = len(sky.Satellites)
 	}
 
 	switch {
