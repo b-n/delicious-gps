@@ -28,7 +28,7 @@ func OpenOutput(ctx context.Context, done chan bool, c chan uint8, startState ui
 		return nil
 	}
 
-	led.Color(uint32(0x0000ff))
+	led.Color(colorFromState(startState))
 
 	go func() {
 		logging.Debug("Opened Output")
