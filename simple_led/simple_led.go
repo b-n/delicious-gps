@@ -28,18 +28,18 @@ func (l *Lamp) Color(c uint32) error {
 }
 
 func (l *Lamp) Blink(b bool) {
-	if l.blinking {
-		if b {
-			return
-		}
-
-		l.blinkDone <- true
+	if l.blinking == b {
 		return
 	}
 
 	l.blinking = b
 
 	if !b {
+		// Send non-blocking done signal
+		select {
+		case l.blinkDone <- true:
+		default:
+		}
 		return
 	}
 
@@ -69,7 +69,9 @@ func (l *Lamp) Blink(b bool) {
 }
 
 func (l *Lamp) Close() {
-	l.Blink(false)
+	if l.blinking {
+		l.blinkDone <- true
+	}
 	l.ws.Fini()
 }
 
