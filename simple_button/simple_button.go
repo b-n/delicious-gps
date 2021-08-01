@@ -2,24 +2,22 @@ package simple_button
 
 import (
 	"os"
-	"time"
 
 	"github.com/stianeikeland/go-rpio/v4"
 )
 
-const DEBOUNCE_MS int64 = 30000
-
 type ButtonEvent uint8
 
 const (
-	PRESSED ButtonEvent = iota
-	RELEASED
+	ON ButtonEvent = iota
+	OFF
+	CLICK
+	DBL_CLICK
 )
 
 var (
 	initialized         bool
 	notificationChannel chan EventPayload
-	buttons             []Button
 )
 
 type EventPayload struct {
@@ -27,46 +25,14 @@ type EventPayload struct {
 	Event ButtonEvent
 }
 
-type Button struct {
-	pin             uint8
-	lastSteadyState rpio.State
-	lastState       rpio.State
-	currentState    rpio.State
-	lastDebounceMs  int64
-	polling         bool
-	rpio_pin        rpio.Pin
-}
-
-func (b *Button) Watch(events chan EventPayload) {
-	for {
-		if !b.polling {
-			break
-		}
-
-		// Debouncing logic
-		b.currentState = b.rpio_pin.Read()
-
-		if b.currentState != b.lastState {
-			b.lastDebounceMs = time.Now().UnixNano()
-			b.lastState = b.currentState
-		}
-
-		if time.Now().UnixNano()-b.lastDebounceMs > DEBOUNCE_MS {
-			if b.lastSteadyState == rpio.High && b.currentState == rpio.Low {
-				events <- EventPayload{b.pin, PRESSED}
-			}
-			if b.lastSteadyState == rpio.Low && b.currentState == rpio.High {
-				events <- EventPayload{b.pin, RELEASED}
-			}
-
-			b.lastSteadyState = b.currentState
-		}
-
+func notify(pin uint8, event ButtonEvent) {
+	if !initialized {
+		return
 	}
-}
-
-func (b *Button) Stop() {
-	b.polling = false
+	notificationChannel <- EventPayload{
+		Pin:   pin,
+		Event: event,
+	}
 }
 
 func Init() (chan EventPayload, error) {
@@ -95,9 +61,9 @@ func Close() error {
 	return nil
 }
 
-func NewSimpleButton(gpio_pin uint8) *Button {
+func Watch(gpio_pin uint8) {
 	if _, err := os.Stat("/dev/gpiomem"); os.IsNotExist(err) {
-		return &Button{}
+		return
 	}
 
 	pin := rpio.Pin(gpio_pin)
@@ -109,11 +75,9 @@ func NewSimpleButton(gpio_pin uint8) *Button {
 		lastSteadyState: rpio.High,
 		currentState:    rpio.High,
 		lastState:       rpio.High,
-		polling:         true,
 		rpio_pin:        pin,
+		timers:          buttonTimers{0, 0, 0, 0},
 	}
 
-	go butt.Watch(notificationChannel)
-
-	return &butt
+	go butt.Listen()
 }
