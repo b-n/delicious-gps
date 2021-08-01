@@ -87,17 +87,3 @@ manuall clear it.
 **Easily find your pi**
 
 `nmap -p 22 --open 192.168.x.0/24`, but making sure x is the same as your current network
-
-## TODO
-
-- [x] Basic GPSD listener and sqlite writer
-- [x] Configuration (command line can support args)
-- [x] "Proper" logging/verbosity
-- [x] Some level of "ready" state
-- [ ] Upstartd script/installer
-- [x] Log location values to the database
-- [x] GPIO interfacing
-  - [ ] Buttons
-  - [x] neopixel (for feedback)
-- [ ] Make it all work
-- [ ] Buffer the database write. Every now and then it takes some time, and blocks the main thread
