@@ -1,7 +1,6 @@
 package simple_button
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/stianeikeland/go-rpio/v4"
@@ -61,7 +60,6 @@ func (b *Button) Listen() {
 		// - off-on needs to be long enough to register a click (increments count if true)
 		// - will wait for multi click events, otherwise fires event (based on count)
 		if b.timers.pressed > 0 && b.currentState == rpio.High && now-b.timers.pressed > CLICK_MS {
-			fmt.Printf("parsing click %d\n", b.timers.clickCount)
 			b.timers.pressed = 0
 			b.timers.click = now
 			b.timers.clickCount = b.timers.clickCount + 1
@@ -69,7 +67,6 @@ func (b *Button) Listen() {
 
 		// wait for multi click events
 		if b.timers.click > 0 && now-DBL_CLICK_DUR > b.timers.click {
-			fmt.Printf("sending event %d\n", b.timers.clickCount)
 			if b.timers.clickCount > 1 {
 				notify(b.pin, DBL_CLICK)
 			} else {
