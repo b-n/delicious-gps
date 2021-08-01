@@ -2,6 +2,7 @@ package location
 
 import (
 	"context"
+	"time"
 
 	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/stratoberry/go-gpsd"
@@ -12,6 +13,7 @@ type PositionData struct {
 	TPVReport *gpsd.TPVReport
 	SKYReport *gpsd.SKYReport
 	Status    GPS_STATUS
+	CreatedAt int64
 }
 
 var (
@@ -37,6 +39,7 @@ func notify() {
 		TPVReport: lastTpvReport,
 		SKYReport: lastSkyReport,
 		Status:    state,
+		CreatedAt: time.Now().Unix(),
 	}
 	select {
 	case notificationChannel <- data:
