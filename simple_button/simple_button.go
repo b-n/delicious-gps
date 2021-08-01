@@ -36,7 +36,7 @@ func notify(pin uint8, event ButtonEvent) {
 }
 
 func Init() (chan EventPayload, error) {
-	notificationChannel = make(chan EventPayload, 1)
+	notificationChannel = make(chan EventPayload)
 
 	// Allow the application to run, even if gpio isn't available (for debugging)
 	if _, err := os.Stat("/dev/gpiomem"); os.IsNotExist(err) {
