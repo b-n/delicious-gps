@@ -8,7 +8,6 @@ import (
 	"github.com/b-n/delicious-gps/internal/mode"
 	"github.com/b-n/delicious-gps/internal/persistence"
 	"github.com/b-n/delicious-gps/simple_button"
-	"gorm.io/gorm"
 )
 
 type AppState uint8
@@ -50,10 +49,10 @@ func waitForInput(ctx context.Context, inputChannel chan simple_button.EventPayl
 	}
 }
 
-func storePositionData(db *gorm.DB, v location.PositionData, m mode.Mode, t int) error {
+func ToPositionRecord(v location.PositionData, m mode.Mode, t int) *persistence.PositionData {
 	tpv := *v.TPVReport
 	sky := *v.SKYReport
-	result := db.Create(&persistence.PositionData{
+	return &persistence.PositionData{
 		Lon:            tpv.Lon,
 		Lat:            tpv.Lat,
 		Alt:            tpv.Alt,
@@ -66,7 +65,5 @@ func storePositionData(db *gorm.DB, v location.PositionData, m mode.Mode, t int)
 		ErrorVelocity:  tpv.Eps,
 		Mode:           int(m),
 		Type:           t,
-	})
-
-	return result.Error
+	}
 }

@@ -90,6 +90,8 @@ func main() {
 	logging.Check(err)
 	err = gpio.OpenOutput(ctx, done)
 	logging.Check(err)
+	storage := make(chan interface{}, 10)
+	persistence.Listen(ctx, done, db, storage)
 
 	// Handle UNIX Signals
 	sigs := make(chan os.Signal, 1)
@@ -99,9 +101,10 @@ func main() {
 		if appStatus != EXITING {
 			appStatus = EXITING
 			close(display)
+			close(storage)
 			mode.Close()
 			cancel()
-			for i := 3; i > 0; i-- {
+			for i := 4; i > 0; i-- {
 				<-done
 			}
 			return
@@ -120,7 +123,15 @@ func main() {
 
 			mode.HandleLocationEvent(v)
 		case d := <-modeData:
-			storePositionData(db, d.Data.(location.PositionData), d.Mode)
+			select {
+			case storage <- ToPositionRecord(
+				d.Data.(location.PositionData),
+				d.Mode,
+				d.Type,
+			):
+			default:
+				logging.Info("Unable to save record to database")
+			}
 		case e := <-inputEvents:
 			switch e.Id {
 			case 0:
