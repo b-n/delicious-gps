@@ -72,7 +72,9 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 
 	go func() {
 		logging.Debug("Watching Input")
-		simple_button.Watch(4)
+		simple_button.RegisterButton(0, 4)
+		simple_button.RegisterButton(1, 17)
+		simple_button.RegisterButton(2, 27)
 
 		for {
 			select {
