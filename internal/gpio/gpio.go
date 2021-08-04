@@ -15,36 +15,40 @@ const (
 	RELEASED
 )
 
+type OutputPayload struct {
+	Blink bool
+	Color uint32
+}
+
 var (
-	button *simple_button.Button
+	outputChannel chan OutputPayload
+	inputChannel  chan simple_button.EventPayload
 )
 
-func OpenOutput(ctx context.Context, done chan bool, c chan uint8, startState uint8) error {
-	outputChannel := c
-	state := startState
+func Init(c chan OutputPayload) chan simple_button.EventPayload {
+	outputChannel = c
+	inputChannel = make(chan simple_button.EventPayload, 1)
+	return inputChannel
+}
 
+func OpenOutput(ctx context.Context, done chan bool) error {
 	led, err := simple_led.NewSimpleLED()
 	if err != nil {
-		return nil
+		return err
 	}
 
-	led.Color(colorFromState(startState))
+	led.Color(0xffffff)
+	led.Blink(true)
 
 	go func() {
 		logging.Debug("Opened Output")
 		for {
 			select {
-			case s := <-outputChannel:
-				logging.Debugf("Received state change to: %d from: %d", s, state)
-				if s != state {
-					state = s
-					led.Color(colorFromState(state))
-					if s&128 > 0 {
-						led.Blink(true)
-					} else {
-						led.Blink(false)
-					}
-				}
+			case o := <-outputChannel:
+				logging.Debugf("Received output payload %v", o)
+
+				led.Color(o.Color)
+				led.Blink(o.Blink)
 			case <-ctx.Done():
 				logging.Debug("Stopping Output")
 
@@ -60,12 +64,10 @@ func OpenOutput(ctx context.Context, done chan bool, c chan uint8, startState ui
 	return nil
 }
 
-func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
-	inputEvents := make(chan InputEvent, 1)
-
+func ListenInput(ctx context.Context, done chan bool) error {
 	buttonEvents, err := simple_button.Init()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	initialized := true
@@ -83,17 +85,16 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 					break
 				}
 				logging.Debugf("Received Input: %v", e)
-				if e.Event == simple_button.ON {
-					// TODO: buffer the events to main
-					select {
-					case inputEvents <- PRESSED:
-					default:
-					}
+
+				// non-blocking send
+				select {
+				case inputChannel <- e:
+				default:
 				}
 			case <-ctx.Done():
 				logging.Debug("Stopping Input")
 				initialized = false
-				close(inputEvents)
+				close(inputChannel)
 				simple_button.Close()
 				done <- true
 				return
@@ -101,23 +102,5 @@ func ListenInput(ctx context.Context, done chan bool) (chan InputEvent, error) {
 		}
 	}()
 
-	return inputEvents, nil
-}
-
-func colorFromState(value uint8) uint32 {
-	// Remove MSB
-	switch value & 127 {
-	case 0:
-		return uint32(0x0000ff)
-	case 1:
-		return uint32(0xff9900)
-	case 2:
-		return uint32(0xffff00)
-	case 3:
-		return uint32(0x00ff00)
-	case 4:
-		return uint32(0x00ff66)
-	default:
-		return uint32(0xff0000)
-	}
+	return nil
 }

@@ -12,7 +12,7 @@ import (
 type PositionData struct {
 	TPVReport *gpsd.TPVReport
 	SKYReport *gpsd.SKYReport
-	Status    GPS_STATUS
+	Status    GPSState
 	CreatedAt int64
 }
 
@@ -25,8 +25,6 @@ var (
 	lastSkyReport       *gpsd.SKYReport
 	lastTpvReport       *gpsd.TPVReport
 )
-
-var satelliteCount = 0
 
 func notify() {
 	if !initialized {
@@ -48,7 +46,10 @@ func notify() {
 	}
 }
 
-func init() {
+func Init() chan PositionData {
+	initialized = false
+	notificationChannel = make(chan PositionData, 1)
+
 	tpvFilter = func(r interface{}) {
 		lastTpvReport = r.(*gpsd.TPVReport)
 		notify()
@@ -57,23 +58,24 @@ func init() {
 	skyFilter = func(r interface{}) {
 		lastSkyReport = r.(*gpsd.SKYReport)
 	}
+
+	return notificationChannel
 }
 
 // Listen will start a listener for the gpsd service
-func Listen(ctx context.Context, done chan bool) (chan PositionData, error) {
-	notificationChannel = make(chan PositionData, 1)
-
+func Listen(ctx context.Context, done chan bool) error {
 	gps, err := gpsd.Dial(gpsd.DefaultAddress)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	gps.AddFilter("TPV", tpvFilter)
 	gps.AddFilter("SKY", skyFilter)
-
 	gps.Watch()
 
 	initialized = true
+
+	logging.Info("Watching GPS")
 
 	go func() {
 		for {
@@ -88,7 +90,5 @@ func Listen(ctx context.Context, done chan bool) (chan PositionData, error) {
 		}
 	}()
 
-	logging.Info("Starting GPS")
-
-	return notificationChannel, nil
+	return nil
 }
