@@ -2,15 +2,15 @@ package location
 
 import "github.com/stratoberry/go-gpsd"
 
-type GPS_STATUS uint8
+type GPSState uint8
 
 const (
-	WAIT_SKY GPS_STATUS = iota
+	WAIT_SKY GPSState = iota
 	WAIT_FIX
 	FIX
 )
 
-func CalculateState(sky *gpsd.SKYReport, tpv *gpsd.TPVReport) GPS_STATUS {
+func CalculateState(sky *gpsd.SKYReport, tpv *gpsd.TPVReport) GPSState {
 	haveSkyReport := sky != nil
 	have3DFix := tpv.Mode == 3
 
