@@ -14,8 +14,9 @@ type ModeHandler interface {
 }
 
 type LocationData struct {
-	Mode Mode
 	Data interface{}
+	Mode Mode
+	Type int
 }
 
 const (
@@ -32,12 +33,12 @@ var (
 	dataChannel chan LocationData
 )
 
-func writeDataChannel(d interface{}, m Mode) {
-	if initialized {
-		go func(d interface{}, m Mode) {
-			dataChannel <- LocationData{m, d}
-		}(d, m)
-	}
+func writeDataChannel(d interface{}, m Mode, t int) {
+	go func(d interface{}, m Mode, t int, i *bool) {
+		if *i {
+			dataChannel <- LocationData{d, m, t}
+		}
+	}(d, m, t, &initialized)
 }
 
 func Init() (Mode, chan LocationData) {

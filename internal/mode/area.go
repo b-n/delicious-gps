@@ -8,7 +8,7 @@ import (
 )
 
 type AreaType struct {
-	Name  string
+	Id    int
 	Color uint32
 }
 
@@ -17,9 +17,13 @@ type AreaMode struct {
 	areas  *ring.Ring
 }
 
-func (a *AreaMode) RegisterType(name string, color uint32) {
+func (a *AreaMode) RegisterType(color uint32) {
+	var id = 0
+	if a.areas != nil {
+		id = a.areas.Len()
+	}
 	j := ring.New(1)
-	j.Value = AreaType{Name: name, Color: color}
+	j.Value = AreaType{Id: id, Color: color}
 
 	if a.areas == nil {
 		a.areas = j
@@ -30,7 +34,7 @@ func (a *AreaMode) RegisterType(name string, color uint32) {
 
 func (a *AreaMode) HandleLocationEvent(e interface{}) {
 	if !a.paused {
-		writeDataChannel(e, AREA)
+		writeDataChannel(e, AREA, a.areas.Value.(AreaType).Id)
 	}
 }
 
@@ -52,7 +56,7 @@ func NewAreaMode() ModeHandler {
 		areas:  ring.New(0),
 	}
 
-	am.RegisterType("Testing", uint32(0x009999))
-	am.RegisterType("Testing2", uint32(0x999900))
+	am.RegisterType(uint32(0x009999))
+	am.RegisterType(uint32(0x999900))
 	return &am
 }
