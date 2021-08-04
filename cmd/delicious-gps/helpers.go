@@ -50,7 +50,7 @@ func waitForInput(ctx context.Context, inputChannel chan simple_button.EventPayl
 	}
 }
 
-func storePositionData(db *gorm.DB, v location.PositionData, m mode.Mode) error {
+func storePositionData(db *gorm.DB, v location.PositionData, m mode.Mode, t int) error {
 	tpv := *v.TPVReport
 	sky := *v.SKYReport
 	result := db.Create(&persistence.PositionData{
@@ -65,6 +65,7 @@ func storePositionData(db *gorm.DB, v location.PositionData, m mode.Mode) error 
 		ErrorAlt:       tpv.Epv,
 		ErrorVelocity:  tpv.Eps,
 		Mode:           int(m),
+		Type:           t,
 	})
 
 	return result.Error

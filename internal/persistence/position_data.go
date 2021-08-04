@@ -20,4 +20,5 @@ type PositionData struct {
 	ErrorAlt       float64
 	ErrorVelocity  float64
 	Mode           int
+	Type           int
 }
