@@ -136,6 +136,7 @@ func main() {
 			switch e.Id {
 			case 0:
 				quit()
+				return
 			case 1:
 				switch e.Event {
 				case simple_button.ON:

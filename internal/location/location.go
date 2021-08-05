@@ -78,16 +78,11 @@ func Listen(ctx context.Context, done chan bool) error {
 	logging.Info("Watching GPS")
 
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				logging.Info("Stopping GPS")
-				initialized = false
-				close(notificationChannel)
-				done <- true
-				return
-			}
-		}
+		<-ctx.Done()
+		logging.Info("Stopping GPS")
+		initialized = false
+		close(notificationChannel)
+		done <- true
 	}()
 
 	return nil
