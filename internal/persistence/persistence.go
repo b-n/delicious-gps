@@ -1,15 +1,13 @@
 package persistence
 
 import (
-	"context"
-
 	"github.com/b-n/delicious-gps/internal/logging"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func Open(database gorm.Dialector) (*gorm.DB, error) {
 	db, err := gorm.Open(database, &gorm.Config{})
-
 	if err != nil {
 		return nil, err
 	}
@@ -18,18 +16,19 @@ func Open(database gorm.Dialector) (*gorm.DB, error) {
 	return db, nil
 }
 
-func Listen(ctx context.Context, done chan bool, db *gorm.DB, data chan interface{}) {
+func Listen(database string, data chan interface{}) error {
+	db, err := Open(sqlite.Open(database))
+	if err != nil {
+		return err
+	}
+
 	go func() {
-		for {
-			select {
-			case d := <-data:
-				if result := db.Create(d); result.Error != nil {
-					logging.Infof("Failed to save db record")
-				}
-			case <-ctx.Done():
-				done <- true
-				return
+		for d := range data {
+			logging.Debugf("Writing data")
+			if result := db.Create(d); result.Error != nil {
+				logging.Infof("Failed to save db record")
 			}
 		}
 	}()
+	return nil
 }

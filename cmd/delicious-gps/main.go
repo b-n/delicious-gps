@@ -14,8 +14,6 @@ import (
 	"github.com/b-n/delicious-gps/internal/mode"
 	"github.com/b-n/delicious-gps/internal/persistence"
 	"github.com/b-n/delicious-gps/simple_button"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 type Options struct {
@@ -26,7 +24,6 @@ type Options struct {
 }
 
 var (
-	db        *gorm.DB
 	opts      Options
 	appStatus AppState = INITIALISING
 	gpsState  location.GPSState
@@ -49,11 +46,6 @@ func initOptions(args []string) Options {
 func init() {
 	opts = initOptions(os.Args)
 	logging.Init(opts.Debug)
-
-	gormdb, err := persistence.Open(sqlite.Open(opts.Database))
-	logging.Check(err)
-
-	db = gormdb
 }
 
 func main() {
@@ -90,8 +82,9 @@ func main() {
 	logging.Check(err)
 	err = gpio.OpenOutput(ctx, done)
 	logging.Check(err)
-	storage := make(chan interface{}, 10)
-	persistence.Listen(ctx, done, db, storage)
+	storage := make(chan interface{}, 30)
+	err = persistence.Listen(opts.Database, storage)
+	logging.Check(err)
 
 	// Handle UNIX Signals
 	sigs := make(chan os.Signal, 1)
@@ -104,7 +97,7 @@ func main() {
 			close(storage)
 			mode.Close()
 			cancel()
-			for i := 4; i > 0; i-- {
+			for i := 3; i > 0; i-- {
 				<-done
 			}
 			return
@@ -121,8 +114,15 @@ func main() {
 				}
 			}
 
+			//Implement GPS Status Check
+			if v.SKYReport == nil {
+				break
+			}
 			mode.HandleLocationEvent(v)
-		case d := <-modeData:
+		case d, ok := <-modeData:
+			if !ok {
+				break
+			}
 			select {
 			case storage <- ToPositionRecord(
 				d.Data.(location.PositionData),
