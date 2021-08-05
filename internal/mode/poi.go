@@ -18,6 +18,9 @@ func NewPoiMode() ModeHandler {
 }
 
 func (p *PoiMode) HandleInput(e simple_button.EventPayload) *gpio.OutputPayload {
+	if e.Event != simple_button.CLICK {
+		return nil
+	}
 	if p.lastEvent.Before(time.Now().Add(-5 * time.Second)) {
 		return &gpio.OutputPayload{false, uint32(0xff0000)}
 	}
