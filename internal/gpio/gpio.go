@@ -44,7 +44,10 @@ func OpenOutput(ctx context.Context, done chan bool) error {
 		logging.Debug("Opened Output")
 		for {
 			select {
-			case o := <-outputChannel:
+			case o, ok := <-outputChannel:
+				if !ok {
+					break
+				}
 				logging.Debugf("Received output payload %v", o)
 
 				led.Color(o.Color)
