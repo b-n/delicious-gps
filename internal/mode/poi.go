@@ -17,19 +17,23 @@ func NewPoiMode() ModeHandler {
 	return &pm
 }
 
-func (p *PoiMode) HandleInput(e simple_button.EventPayload) *gpio.OutputPayload {
+func (p *PoiMode) HandleInput(e simple_button.EventPayload) {
 	if e.Event != simple_button.CLICK {
-		return nil
+		return
 	}
 	if p.lastEvent.Before(time.Now().Add(-5 * time.Second)) {
-		return &gpio.OutputPayload{false, uint32(0xff0000)}
+		writeDisplayChannel(gpio.OutputPayload{false, uint32(0xff0000)})
 	}
 
 	writeDataChannel(p.lastLocationEvent, POI, 0)
-	return &gpio.OutputPayload{false, uint32(0xffffff)}
+	writeDisplayChannel(gpio.OutputPayload{false, uint32(0xffffff)})
 }
 
 func (p *PoiMode) HandleLocationEvent(e interface{}) {
 	p.lastLocationEvent = e
 	p.lastEvent = time.Now()
+}
+
+func (a *PoiMode) Activate() {
+	writeDisplayChannel(gpio.OutputPayload{true, uint32(0xffffff)})
 }

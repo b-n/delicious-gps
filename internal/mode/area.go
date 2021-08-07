@@ -38,16 +38,19 @@ func (a *AreaMode) HandleLocationEvent(e interface{}) {
 	}
 }
 
-func (a *AreaMode) HandleInput(e simple_button.EventPayload) *gpio.OutputPayload {
+func (a *AreaMode) HandleInput(e simple_button.EventPayload) {
 	switch e.Event {
 	case simple_button.DBL_CLICK:
 		a.paused = !a.paused
-		return &gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color}
+		writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
 	case simple_button.CLICK:
 		a.areas = a.areas.Next()
-		return &gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color}
+		writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
 	}
-	return nil
+}
+
+func (a *AreaMode) Activate() {
+	writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
 }
 
 func NewAreaMode() ModeHandler {

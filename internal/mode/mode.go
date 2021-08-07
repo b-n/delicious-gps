@@ -10,7 +10,8 @@ type Mode uint8
 
 type ModeHandler interface {
 	HandleLocationEvent(e interface{})
-	HandleInput(e simple_button.EventPayload) *gpio.OutputPayload
+	HandleInput(e simple_button.EventPayload)
+	Activate()
 }
 
 type LocationData struct {
@@ -26,11 +27,12 @@ const (
 )
 
 var (
-	initialized bool
-	am          ModeHandler
-	pm          ModeHandler
-	activeMode  ModeHandler
-	dataChannel chan LocationData
+	initialized    bool
+	am             ModeHandler
+	pm             ModeHandler
+	activeMode     ModeHandler
+	dataChannel    chan LocationData
+	displayChannel chan gpio.OutputPayload
 )
 
 func writeDataChannel(d interface{}, m Mode, t int) {
@@ -41,31 +43,44 @@ func writeDataChannel(d interface{}, m Mode, t int) {
 	}(d, m, t, &initialized)
 }
 
-func Init() (Mode, chan LocationData) {
+func writeDisplayChannel(d gpio.OutputPayload) {
+	go func(d gpio.OutputPayload, i *bool) {
+		if *i {
+			displayChannel <- d
+		}
+	}(d, &initialized)
+}
+
+func Init() (Mode, chan LocationData, chan gpio.OutputPayload) {
 	dataChannel = make(chan LocationData)
+	displayChannel = make(chan gpio.OutputPayload)
 	am = NewAreaMode()
 	pm = NewPoiMode()
 	initialized = true
-	return UNASSIGNED, dataChannel
+	return UNASSIGNED, dataChannel, displayChannel
 }
 
 func Use(m Mode) Mode {
+	if m == UNASSIGNED {
+		activeMode = nil
+		return m
+	}
 	if m == AREA {
 		logging.Info("Area mode active")
 		activeMode = am
-		return AREA
 	} else if m == POI {
 		logging.Info("POI mode active")
 		activeMode = pm
-		return POI
 	}
-	return UNASSIGNED
+	activeMode.Activate()
+	return m
 }
 
 func Close() {
 	if initialized {
 		initialized = false
 		close(dataChannel)
+		close(displayChannel)
 	}
 }
 
@@ -73,6 +88,6 @@ func HandleLocationEvent(e interface{}) {
 	activeMode.HandleLocationEvent(e)
 }
 
-func HandleInput(e simple_button.EventPayload) *gpio.OutputPayload {
-	return activeMode.HandleInput(e)
+func HandleInput(e simple_button.EventPayload) {
+	activeMode.HandleInput(e)
 }

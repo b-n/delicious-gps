@@ -69,7 +69,7 @@ func main() {
 		logging.Check(errors.New("Exiting: On switch is currently off"))
 	}
 
-	_, modeData := mode.Init()
+	_, modeData, modeDisplay := mode.Init()
 
 	if initialState&2 == 2 {
 		mode.Use(mode.POI)
@@ -132,6 +132,14 @@ func main() {
 			default:
 				logging.Info("Unable to save record to database")
 			}
+		case d, ok := <-modeDisplay:
+			if !ok {
+				break
+			}
+			select {
+			case display <- d:
+			default:
+			}
 		case e := <-inputEvents:
 			switch e.Id {
 			case 0:
@@ -145,12 +153,7 @@ func main() {
 					mode.Use(mode.AREA)
 				}
 			case 2:
-				if de := mode.HandleInput(e); de != nil {
-					select {
-					case display <- *de:
-					default:
-					}
-				}
+				mode.HandleInput(e)
 			}
 		case <-sigs:
 			quit()
