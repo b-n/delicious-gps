@@ -22,11 +22,11 @@ func (p *PoiMode) HandleInput(e simple_button.EventPayload) {
 		return
 	}
 	if p.lastEvent.Before(time.Now().Add(-5 * time.Second)) {
-		writeDisplayChannel(gpio.OutputPayload{false, uint32(0xff0000)})
+		writeDisplayChannel(gpio.OutputPayload{0, false, uint32(0xff0000)})
 	}
 
 	writeDataChannel(p.lastLocationEvent, POI, 0)
-	writeDisplayChannel(gpio.OutputPayload{false, uint32(0xffffff)})
+	writeDisplayChannel(gpio.OutputPayload{0, false, uint32(0xffffff)})
 }
 
 func (p *PoiMode) HandleLocationEvent(e interface{}) {
@@ -35,5 +35,5 @@ func (p *PoiMode) HandleLocationEvent(e interface{}) {
 }
 
 func (a *PoiMode) Activate() {
-	writeDisplayChannel(gpio.OutputPayload{true, uint32(0xffffff)})
+	writeDisplayChannel(gpio.OutputPayload{0, true, uint32(0xffffff)})
 }

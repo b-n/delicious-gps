@@ -42,15 +42,15 @@ func (a *AreaMode) HandleInput(e simple_button.EventPayload) {
 	switch e.Event {
 	case simple_button.DBL_CLICK:
 		a.paused = !a.paused
-		writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
+		writeDisplayChannel(gpio.OutputPayload{0, a.paused, a.areas.Value.(AreaType).Color})
 	case simple_button.CLICK:
 		a.areas = a.areas.Next()
-		writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
+		writeDisplayChannel(gpio.OutputPayload{0, a.paused, a.areas.Value.(AreaType).Color})
 	}
 }
 
 func (a *AreaMode) Activate() {
-	writeDisplayChannel(gpio.OutputPayload{a.paused, a.areas.Value.(AreaType).Color})
+	writeDisplayChannel(gpio.OutputPayload{0, a.paused, a.areas.Value.(AreaType).Color})
 }
 
 func NewAreaMode() ModeHandler {
