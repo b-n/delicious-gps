@@ -16,6 +16,7 @@ const (
 )
 
 type OutputPayload struct {
+	Index int
 	Blink bool
 	Color uint32
 }
@@ -32,13 +33,12 @@ func Init(c chan OutputPayload) chan simple_button.EventPayload {
 }
 
 func OpenOutput(ctx context.Context, done chan bool) error {
-	led, err := simple_led.NewSimpleLED()
+	err := simple_led.Init(2)
 	if err != nil {
 		return err
 	}
 
-	led.Color(0xffffff)
-	led.Blink(true)
+	simple_led.Color(0, 0xffffff)
 
 	go func() {
 		logging.Debug("Opened Output")
@@ -50,13 +50,12 @@ func OpenOutput(ctx context.Context, done chan bool) error {
 				}
 				logging.Debugf("Received output payload %v", o)
 
-				led.Color(o.Color)
-				led.Blink(o.Blink)
+				simple_led.Color(o.Index, o.Color)
+				simple_led.Blink(o.Index, o.Blink)
 			case <-ctx.Done():
 				logging.Debug("Stopping Output")
 
-				led.Color(uint32(0x000000))
-				led.Close()
+				simple_led.Close()
 
 				done <- true
 				return
