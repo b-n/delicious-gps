@@ -52,11 +52,40 @@ After build, you should be able to copy the binary to the Rasperry Pi
 scp ./bin/delicious-gps pi@<ip-address>:~/delicious-gps
 ```
 
-And then run via a ssh shell
+And you should be able to run it simply with
 
 ```sh
-ssh pi@<ip-address>
 sudo ./delicious-gps
+```
+
+Note: `sudo` is needed since read/write to /dev/mem is needed. This is somewhat
+dangerous since you're going this app access to the entire system memory.
+
+### Running as a service
+
+Use `delicious-gps --install-service` to install a systemd service runner for
+delicious-gps. Follow the instructions and you should be fine. Make sure
+delicious-gps is available in `/usr/local/sbin`, or edit the systemd configuration
+with `systemctl edit delicious-gps`
+
+**Starting**
+
+Make sure delicious-gps is enabled
+`systemctl enable delicious-gps`
+
+And start listening (will try to restart every 2 seconds) with:
+`systemctl start delicious-gps`
+
+**Stopping**
+
+Easy as `systemctl stop delicious-gps`
+
+**Uninstalling service**
+
+```
+systemctl stop delicious-gps
+systemctl disable delicious-gps
+rm /etc/systemd/system/delicious-gps.service
 ```
 
 ## Development

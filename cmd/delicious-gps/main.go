@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"os"
 	"os/signal"
@@ -13,14 +12,16 @@ import (
 	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/b-n/delicious-gps/internal/mode"
 	"github.com/b-n/delicious-gps/internal/persistence"
+	"github.com/b-n/delicious-gps/internal/servicify"
 	"github.com/b-n/delicious-gps/simple_button"
 )
 
 type Options struct {
-	Debug        bool
-	DebugReports bool
-	CheckPowerSW bool
-	Database     string
+	CheckPowerSW   bool
+	Debug          bool
+	DebugReports   bool
+	InstallService bool
+	Database       string
 }
 
 var (
@@ -34,9 +35,10 @@ func initOptions(args []string) Options {
 	opts := Options{}
 
 	flag.StringVar(&opts.Database, "database", "data.db", "the name of the database file to output to")
-	flag.BoolVar(&opts.Debug, "debug", false, "if true, output debug logging")
+	flag.BoolVar(&opts.Debug, "debug", false, "Output debug logging")
 	flag.BoolVar(&opts.DebugReports, "debug-reports", false, "Turns on debuging of raw reports (requires --debug)")
 	flag.BoolVar(&opts.CheckPowerSW, "check-power-switch", true, "Check power switch on start up (and die if not enabled)")
+	flag.BoolVar(&opts.InstallService, "install-service", false, "Install delicious-gps as a systemd service")
 
 	flag.Parse()
 
@@ -49,6 +51,14 @@ func init() {
 }
 
 func main() {
+	if opts.InstallService {
+		err := servicify.InstallAsService()
+		if err != nil {
+			logging.Check(err)
+		}
+		return
+	}
+
 	logging.Info("delcious-gps Started")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,7 +76,11 @@ func main() {
 	// Check power switch (if required), and quick if needed
 	initialState := waitForInput(ctx, inputEvents, 500)
 	if opts.CheckPowerSW && initialState&1 != 1 {
-		logging.Check(errors.New("Exiting: On switch is currently off"))
+		logging.Info("Exiting: On switch is currently off")
+		close(display)
+		cancel()
+		<-done
+		return
 	}
 
 	_, modeData := mode.Init()
