@@ -75,11 +75,11 @@ func Listen(ctx context.Context, done chan bool) error {
 
 	initialized = true
 
-	logging.Info("Watching GPS")
+	logging.Debug("Watching GPS")
 
 	go func() {
 		<-ctx.Done()
-		logging.Info("Stopping GPS")
+		logging.Debug("Stopping GPS")
 		initialized = false
 		close(notificationChannel)
 		done <- true

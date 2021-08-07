@@ -25,7 +25,7 @@ type Options struct {
 
 var (
 	opts      Options
-	appStatus AppState = INITIALISING
+	appStatus AppState
 	gpsState  location.GPSState
 	paused    bool = false
 )
@@ -49,7 +49,7 @@ func init() {
 }
 
 func main() {
-	logging.Info("delcious-gps Started")
+	appStatus = UpdateAppStatus(INITIALISING)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan bool)
@@ -90,9 +90,11 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 
+	appStatus = UpdateAppStatus(RUNNING)
+
 	quit := func() {
 		if appStatus != EXITING {
-			appStatus = EXITING
+			appStatus = UpdateAppStatus(EXITING)
 			close(display)
 			close(storage)
 			mode.Close()

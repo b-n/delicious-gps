@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/b-n/delicious-gps/internal/location"
+	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/b-n/delicious-gps/internal/mode"
 	"github.com/b-n/delicious-gps/internal/persistence"
 	"github.com/b-n/delicious-gps/simple_button"
@@ -14,10 +15,7 @@ type AppState uint8
 
 const (
 	INITIALISING AppState = iota
-	WAITING_GPS
-	RUNNING_AREA
-	PAUSED_AREA
-	RUNNING_POI
+	RUNNING
 	ERRORED
 	EXITING
 )
@@ -25,14 +23,16 @@ const (
 var (
 	stateMessage = map[AppState]string{
 		INITIALISING: "Initializing",
-		WAITING_GPS:  "Waiting on 3D GPS Fix",
-		RUNNING_AREA: "Running (Area mode)",
-		PAUSED_AREA:  "Paused (Area mode)",
-		RUNNING_POI:  "Running (POI mode)",
+		RUNNING:      "Running",
 		ERRORED:      "UNKNOWN/ERROR",
 		EXITING:      "Exiting",
 	}
 )
+
+func UpdateAppStatus(newStatus AppState) AppState {
+	logging.Info(stateMessage[newStatus])
+	return newStatus
+}
 
 func waitForInput(ctx context.Context, inputChannel chan simple_button.EventPayload, millis time.Duration) uint8 {
 	timeout, cancel := context.WithTimeout(ctx, millis*time.Millisecond)
