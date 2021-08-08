@@ -121,6 +121,15 @@ func main() {
 				break
 			}
 			mode.HandleLocationEvent(v)
+
+			select {
+			case display <- gpio.OutputPayload{
+				Index: 1,
+				Blink: false,
+				Color: PositionRecordToColor(v),
+			}:
+			default:
+			}
 		case d, ok := <-modeData:
 			if !ok {
 				break
