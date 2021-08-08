@@ -59,6 +59,8 @@ func NewAreaMode() ModeHandler {
 		areas:  ring.New(0),
 	}
 
+	am.RegisterType(uint32(0x990000))
+	am.RegisterType(uint32(0x009900))
 	am.RegisterType(uint32(0x009999))
 	am.RegisterType(uint32(0x999900))
 	return &am
