@@ -22,6 +22,7 @@ RUN git clone https://github.com/jgarff/rpi_ws281x.git \
 FROM golang:1.15
 
 ARG CACHE_LOCATION=/.cache
+ARG ENTRY_POINT=/.cache
 
 COPY --from=ws281x_builder /usr/local/lib/libws2811.a /usr/local/lib/
 COPY --from=ws281x_builder /usr/local/include/ws2811 /usr/local/include/ws2811
@@ -39,4 +40,4 @@ USER user
 
 WORKDIR /cache-build
 COPY . /cache-build
-RUN env GCO_ENABLED=1 GOCACHE=$CACHE_LOCATION go build -v -o cache-build cmd/delicious-gps/main.go
+RUN env GCO_ENABLED=1 GOCACHE=$CACHE_LOCATION go build -v -o cache-build $ENTRY_POINT

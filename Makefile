@@ -23,7 +23,7 @@ build-rpi:
 	docker run --rm -v "$$PWD":/usr/src/delicious-gps --platform $(PLATFORM) -w /usr/src/delicious-gps -u `id -u $$USER` delicious-builder env GOCACHE=$(DOCKER_GO_CACHE) make build
 
 docker-builder:
-	docker buildx build --platform $(PLATFORM) --tag delicious-builder --file Dockerfile --progress=plain --build-arg CACHE_LOCATION=$(DOCKER_GO_CACHE) .
+	docker buildx build --platform $(PLATFORM) --tag delicious-builder --file Dockerfile --progress=plain --build-arg CACHE_LOCATION=$(DOCKER_GO_CACHE) --build-arg ENTRY_POINT=$(ENTRY_POINT) .
 
 build-and-upload: build-rpi
 	scp $(TARGET) pi@${PI_IP_ADDRESS}:~/delicious-gps
