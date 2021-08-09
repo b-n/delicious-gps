@@ -10,10 +10,11 @@ import (
 
 // PositionData contains the location data from gpsd
 type PositionData struct {
-	TPVReport *gpsd.TPVReport
-	SKYReport *gpsd.SKYReport
-	Status    GPSState
-	CreatedAt int64
+	TPVReport  *gpsd.TPVReport
+	SKYReport  *gpsd.SKYReport
+	Status     GPSState
+	CreatedAt  int64
+	TotalError float64
 }
 
 var (
@@ -26,6 +27,10 @@ var (
 	lastTpvReport       *gpsd.TPVReport
 )
 
+func errorFromTPV(r *gpsd.TPVReport) float64 {
+	return r.Epx * r.Epy * r.Epv
+}
+
 func notify() {
 	if !initialized {
 		logging.Debug("GPS: dropped notify, not initialized")
@@ -34,10 +39,11 @@ func notify() {
 
 	state := CalculateState(lastSkyReport, lastTpvReport)
 	data := PositionData{
-		TPVReport: lastTpvReport,
-		SKYReport: lastSkyReport,
-		Status:    state,
-		CreatedAt: time.Now().Unix(),
+		TPVReport:  lastTpvReport,
+		SKYReport:  lastSkyReport,
+		Status:     state,
+		CreatedAt:  time.Now().Unix(),
+		TotalError: errorFromTPV(lastTpvReport),
 	}
 	select {
 	case notificationChannel <- data:
