@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 
@@ -160,6 +161,8 @@ func main() {
 		case e := <-inputEvents:
 			switch e.Id {
 			case 0:
+				cmd := exec.Command("shutdown", "now")
+				cmd.Run()
 				quit()
 				return
 			case 1:
