@@ -44,8 +44,8 @@ var (
 		EXITING:      "Exiting",
 	}
 	gpsColor DomainRangeFunc = DomainToRange(
-		[]float64{10000, 50000},
-		[]float64{180, 0},
+		[]float64{3000, 20000},
+		[]float64{135, 0},
 	)
 )
 
@@ -69,10 +69,8 @@ func waitForInput(ctx context.Context, inputChannel chan simple_button.EventPayl
 	}
 }
 
-func PositionRecordToColor(v location.PositionData) uint32 {
-	tpv := *v.TPVReport
-	totalError := tpv.Epx * tpv.Epy * tpv.Epv
-	r, g, b := colorful.Hcl(gpsColor(totalError), 0.65, 0.35).Clamped().RGB255()
+func GPSErrorColor(e float64) uint32 {
+	r, g, b := colorful.Hcl(gpsColor(e), 0.65, 0.35).Clamped().RGB255()
 	return uint32(r)<<16 | uint32(g)<<8 | uint32(b)
 }
 
