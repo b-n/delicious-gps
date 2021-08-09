@@ -2,6 +2,7 @@ package gpio
 
 import (
 	"context"
+	"time"
 
 	"github.com/b-n/delicious-gps/internal/logging"
 	"github.com/b-n/delicious-gps/simple_button"
@@ -67,7 +68,7 @@ func OpenOutput(ctx context.Context, done chan bool) error {
 }
 
 func ListenInput(ctx context.Context, done chan bool) error {
-	buttonEvents, err := simple_button.Init()
+	buttonEvents, err := simple_button.Init(3 * time.Millisecond)
 	if err != nil {
 		return err
 	}
