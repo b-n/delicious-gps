@@ -16,12 +16,11 @@ const (
 	DBL_CLICK
 )
 
-const GPIO_POLLING_INT time.Duration = 200 * time.Microsecond
-
 var (
 	initialized         bool
 	notificationChannel chan EventPayload
 	buttons             []Button
+	pollingTicker       *time.Ticker
 )
 
 type EventPayload struct {
@@ -41,7 +40,7 @@ func notify(b *Button, event ButtonEvent) {
 	}
 }
 
-func Init() (chan EventPayload, error) {
+func Init(pollingInterval time.Duration) (chan EventPayload, error) {
 	notificationChannel = make(chan EventPayload)
 	buttons = make([]Button, 0)
 
@@ -57,16 +56,14 @@ func Init() (chan EventPayload, error) {
 
 	initialized = true
 
+	pollingTicker = time.NewTicker(pollingInterval)
+
 	// TODO: Maybe we don't share memory between goroutines one day
 	go func(buttons *[]Button) {
-		for {
-			if !initialized {
-				return
-			}
+		for range pollingTicker.C {
 			for i := range *buttons {
 				(*buttons)[i].tick()
 			}
-			time.Sleep(GPIO_POLLING_INT)
 		}
 	}(&buttons)
 
@@ -96,6 +93,7 @@ func RegisterButton(id uint8, gpio_pin uint8) {
 func Close() error {
 	if initialized {
 		initialized = false
+		pollingTicker.Stop()
 		close(notificationChannel)
 		return rpio.Close()
 	}

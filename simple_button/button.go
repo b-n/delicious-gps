@@ -28,6 +28,10 @@ type Button struct {
 }
 
 func (b *Button) tick() {
+	if !initialized {
+		return
+	}
+
 	b.currentState = b.rpio_pin.Read()
 
 	//track last known state and set debounce timer
