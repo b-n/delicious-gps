@@ -163,8 +163,6 @@ func main() {
 			case 0:
 				cmd := exec.Command("shutdown", "now")
 				cmd.Run()
-				quit()
-				return
 			case 1:
 				switch e.Event {
 				case simple_button.ON:
