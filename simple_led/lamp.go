@@ -5,7 +5,6 @@ type Lamp struct {
 	on       bool
 	blinking bool
 	color    uint32
-	ws       *wsEngine
 }
 
 func (l *Lamp) render() {
@@ -13,8 +12,9 @@ func (l *Lamp) render() {
 	if l.on {
 		toColor = l.color
 	}
-	(*l.ws).Leds(0)[l.index] = toColor
-	(*l.ws).Render()
+	if initialized {
+		renderChan <- renderReq{l.index, toColor}
+	}
 }
 
 func (l *Lamp) Color(c uint32) {

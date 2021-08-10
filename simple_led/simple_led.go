@@ -1,6 +1,7 @@
 package simple_led
 
 import (
+	"sync"
 	"time"
 
 	ws2811 "github.com/rpi-ws281x/rpi-ws281x-go"
@@ -15,11 +16,18 @@ type wsEngine interface {
 	Leds(channel int) []uint32
 }
 
+type renderReq struct {
+	Index int
+	Color uint32
+}
+
 var (
 	blinkTicker *time.Ticker
 	ws          wsEngine
 	initialized bool
 	lamps       []Lamp
+	renderChan  chan renderReq
+	done        sync.WaitGroup
 )
 
 func Init(c int) error {
@@ -34,7 +42,7 @@ func Init(c int) error {
 	ws = dev
 	lamps = make([]Lamp, c)
 	for i := 0; i < c; i++ {
-		lamps[i] = Lamp{i, false, false, uint32(0x000000), &ws}
+		lamps[i] = Lamp{i, false, false, uint32(0x000000)}
 	}
 
 	err = ws.Init()
@@ -43,6 +51,18 @@ func Init(c int) error {
 	}
 
 	initialized = true
+
+	renderChan = make(chan renderReq, 10)
+
+	go func() {
+		done.Add(1)
+		for r := range renderChan {
+			ws.Leds(0)[r.Index] = r.Color
+			ws.Render()
+			ws.Wait()
+		}
+		done.Done()
+	}()
 
 	blinkTicker = time.NewTicker(time.Second / 3)
 	go func(lamps *[]Lamp) {
@@ -68,10 +88,12 @@ func Close() {
 	if initialized {
 		initialized = false
 		blinkTicker.Stop()
-
+		close(renderChan)
+		done.Wait()
 		for _, l := range lamps {
 			l.Color(uint32(0))
 		}
+		ws.Render()
 		ws.Wait()
 		ws.Fini()
 	}
