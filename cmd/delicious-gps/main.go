@@ -161,8 +161,10 @@ func main() {
 		case e := <-inputEvents:
 			switch e.Id {
 			case 0:
+				quit()
 				cmd := exec.Command("shutdown", "now")
 				cmd.Run()
+				return
 			case 1:
 				switch e.Event {
 				case simple_button.ON:

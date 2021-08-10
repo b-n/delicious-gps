@@ -91,7 +91,7 @@ func Close() {
 		close(renderChan)
 		done.Wait()
 		for _, l := range lamps {
-			l.Color(uint32(0))
+			ws.Leds(0)[l.index] = uint32(0)
 		}
 		ws.Render()
 		ws.Wait()
